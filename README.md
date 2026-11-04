@@ -72,4 +72,6 @@ The complete guide lives in [`docs/GUIDE.md`](docs/GUIDE.md): the nodes, the wor
 
 ## Licence
 
-Own code: no licence file yet. BPMN symbols from [bpmn-font](https://github.com/bpmn-io/bpmn-font) (SIL OFL 1.1). Process mining uses PM4Py (AGPL-3.0) in an isolated module. See the guide's *Licences* section.
+[AGPL-3.0](LICENSE): free for everyone. If you offer a modified bpmn8n as a network service, you must publish your changes under the same licence. Need to use it in a closed product? Open an issue to ask about a commercial licence.
+
+BPMN symbols come from [bpmn-font](https://github.com/bpmn-io/bpmn-font) (SIL OFL 1.1). Process mining uses [PM4Py](https://pm4py.fit.fraunhofer.de) (AGPL-3.0). More in the guide's *Licences* section.
