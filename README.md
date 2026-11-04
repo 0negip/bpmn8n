@@ -7,6 +7,7 @@
 Draw real BPMN on the n8n canvas. Describe a process in plain words and an LLM researches the domain, interviews you and builds it. A workflow check catches what n8n would only reveal when a case gets stuck.
 
 ![n8n](https://img.shields.io/badge/engine-n8n-ea4b71?style=flat-square)
+![License](https://img.shields.io/badge/licence-AGPL--3.0-blue?style=flat-square)
 ![Django](https://img.shields.io/badge/tasks-Django-0c4b33?style=flat-square)
 ![BPMN 2.0](https://img.shields.io/badge/notation-BPMN%202.0-1f6feb?style=flat-square)
 
