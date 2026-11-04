@@ -107,11 +107,13 @@ class ProjectBuilder:
         if not isinstance(spec.get("workflow"), dict) or not isinstance(spec.setdefault("activities", []), list):
             return [f"it has no workflow: {json.dumps(spec)[:300]}"]
         taken = {t.name for t in self.prompts.tasks}
-        problems = []
+        problems, seen = [], set()
         for a in spec["activities"]:
             name = a.get("name", "") if isinstance(a, dict) else ""
-            if not name.isidentifier() or keyword.iskeyword(name):
+            if not isinstance(name, str) or not name.isidentifier() or keyword.iskeyword(name):
                 problems.append(f"activity {name or a!r}: its name must be a Python identifier (verb_noun)")
+            elif name in seen:
+                problems.append(f"activity {name}: designed twice; describe it once")
             elif name in taken:
                 problems.append(f"activity {name}: an existing task has this name; reuse it in a task step or rename it")
             elif a.get("kind") not in TASK_KINDS:
@@ -119,6 +121,7 @@ class ProjectBuilder:
             elif not a.get("examples") or not all(isinstance(e, dict) and isinstance(e.get("input"), dict)
                                                   and isinstance(e.get("output"), dict) for e in a["examples"]):
                 problems.append(f"activity {name}: give it 2 or 3 examples, each {{\"input\": {{...}}, \"output\": {{...}}}}")
+            seen.add(name)
         return problems
 
     def write(self, name):

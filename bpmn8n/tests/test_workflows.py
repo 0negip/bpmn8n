@@ -73,6 +73,23 @@ class BuilderTest(SimpleTestCase):
             with self.subTest(error), self.assertRaisesRegex(SpecError, error):
                 Workflow.from_spec({"steps": steps, "flows": flows})
 
+    def test_an_llms_spec_of_the_wrong_shape_goes_back_to_it(self):
+        """Whatever shape the LLM gets wrong is a SpecError (Studio sends those back), never a crash."""
+        start = {"type": "start", "name": "In", "path": "in"}
+        for steps, error in (
+                ({"In": start}, "lists of objects"),
+                ([start, {"type": "gateway", "name": "G", "kind": "exclusive", "question": "q", "branches": ["a"]}],
+                 "AttributeError"),
+                ([start, {"type": "user_task", "name": "U", "title": "t", "lane": "l",
+                          "form": [{"name": "ok", "label": "OK", "type": "boolean"}]}], r"\[name, label, type\]"),
+                ([start, {"type": "event_gateway", "name": "E", "messages": ["m"], "correlation_key": "k",
+                          "timeout": {"amount": 1}}], "KeyError")):
+            with self.subTest(error), self.assertRaisesRegex(SpecError, error):
+                Workflow.from_spec({"steps": steps})
+        timer = {"type": "timer", "name": "Wait", "amount": 1, "unit": "days"}
+        workflow = Workflow.from_spec({"steps": [start, timer], "flows": [{"from": "In", "branch": None, "to": "Wait"}]})
+        self.assertEqual(workflow.connections["In"]["main"][0][0]["node"], "Wait")  # null branch, a single "to"
+
 
     def test_an_llm_agent_is_four_nodes_with_its_chat_model(self):
         model = {"type": "@n8n/n8n-nodes-langchain.lmChatGoogleGemini", "typeVersion": 1.2,
@@ -121,6 +138,10 @@ class CheckTest(TestCase):
                     .task("Send", "sendTask", "send_notification")
                     .flow("In", "Review", "Approved?", "Send")).as_json()
         self.assertNotIn("human", {p[1] for p in rules(approved)})  # it applies the person's decision
+
+    def test_a_workflow_that_does_nothing_is_an_error(self):
+        self.assertIn(("", "empty", "error"), rules(Workflow("Empty").as_json()))
+        self.assertIn(("", "empty", "error"), rules(Workflow("Only the trigger").start("In", "in").as_json()))
 
     def test_what_would_fail_at_run_time_is_an_error(self):
         workflow = (Workflow("Broken").start("Start", "broken")

@@ -2,6 +2,7 @@
 project folder with its activities (@task code) and its n8n workflow. Cards are a job's steps, shown as
 a kanban."""
 import re
+from datetime import timedelta
 
 from django.db import models
 from django.utils import timezone
@@ -12,6 +13,7 @@ from ..conf import settings
 
 class Project(models.Model):
     INTERVIEW, RESEARCH, BUILDING, READY, FAILED = "interview", "research", "building", "ready", "failed"
+    STALE = timedelta(minutes=3)  # a job beats every 30 s
 
     name = models.CharField(max_length=200)
     slug = models.SlugField(max_length=60, unique=True, editable=False,
@@ -50,6 +52,14 @@ class Project(models.Model):
     def busy(self):
         """A job (the research or the build) is running."""
         return self.status in (self.RESEARCH, self.BUILDING)
+
+    def settle(self):
+        """A job whose process died (no heartbeat for STALE, see studio.jobs.heartbeat) ends: the build
+        failed, the interview goes on. Returns the project."""
+        if self.busy and timezone.now() - self.updated > self.STALE:
+            self.status = self.FAILED if self.building else self.INTERVIEW
+            self.save(update_fields=["status", "updated"])
+        return self
 
     @property
     def research_topics(self):

@@ -4,6 +4,7 @@ from django.core.management.base import BaseCommand
 
 from bpmn8n.api import discover
 from bpmn8n.models import Project
+from bpmn8n.studio.jobs import heartbeat
 from bpmn8n.studio.interview import Interview
 from bpmn8n.studio.research import Research
 
@@ -18,5 +19,6 @@ class Command(BaseCommand):
     def handle(self, slug, topic, **options):
         discover()  # the catalog of tasks the interview's prompt lists
         project = Project.objects.get(slug=slug)
+        heartbeat(project)
         research = Research(project, topic)
         research.run(then=Interview(project, research.llm).ask)

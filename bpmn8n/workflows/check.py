@@ -75,7 +75,9 @@ class WorkflowCheck:
     # --- rules ----------------------------------------------------------------------------
 
     def has_trigger(self):
-        if self.nodes and not any(map(is_trigger, self.nodes.values())):
+        if all(map(is_trigger, self.nodes.values())):  # no node, or only the trigger
+            yield Problem("", "empty", "the workflow does nothing: add the process's steps after its trigger")
+        elif not any(map(is_trigger, self.nodes.values())):
             yield Problem("", "trigger", "no trigger: add a webhook (or another trigger) that starts the case", "warning")
 
     def reachable(self):

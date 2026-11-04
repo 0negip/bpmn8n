@@ -2,6 +2,8 @@
 activities import and pass their examples (examples.json), its workflow (workflow.json) passes the
 workflow check. Exits with 1 on errors; --json prints the report, as bpmn8n Studio reads it."""
 import json
+import sys
+from contextlib import redirect_stdout
 from pathlib import Path
 
 from django.core.management.base import BaseCommand, CommandError
@@ -18,7 +20,8 @@ class Command(BaseCommand):
         parser.add_argument("--json", dest="as_json", action="store_true", help="the report as JSON on stdout")
 
     def handle(self, folder, as_json, **options):
-        check = ProjectCheck(folder)
+        with redirect_stdout(sys.stderr):  # what the activities print must not break the JSON report
+            check = ProjectCheck(folder)
         if as_json:
             self.stdout.write(json.dumps(check.as_dict()))
         else:

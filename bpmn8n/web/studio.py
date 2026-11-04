@@ -29,7 +29,7 @@ def projects(request):
             interview(request, project, description)
             return redirect("project", project.slug)
         messages.error(request, "Give the process a name and describe it.")
-    projects = list(Project.objects.all())
+    projects = [p.settle() for p in Project.objects.all()]
     for p in projects:
         p.activity_count = len((p.spec or {}).get("activities", [])) if p.spec else None
     return render(request, "bpmn8n/studio.html", {"projects": projects,
@@ -38,7 +38,7 @@ def projects(request):
 
 @staff_member_required
 def project(request, slug):
-    project = get_object_or_404(Project, slug=slug)
+    project = get_object_or_404(Project, slug=slug).settle()
     if request.method == "POST" and (text := request.POST.get("answer", "").strip()):
         if project.busy:
             messages.warning(request, f"Wait for the {'research' if project.status == Project.RESEARCH else 'build'} to end.")
@@ -70,7 +70,7 @@ def interview(request, project, text):
 @staff_member_required
 @require_POST
 def build(request, slug):
-    project = get_object_or_404(Project, slug=slug)
+    project = get_object_or_404(Project, slug=slug).settle()
     if project.busy:
         messages.warning(request, "Wait for the research or the build to end.")
     elif not project.brief:
@@ -86,12 +86,13 @@ def build(request, slug):
 @staff_member_required
 def events(request, slug):
     """The project's state and cards as server-sent events, whenever they change, until its job ends."""
-    project = get_object_or_404(Project, slug=slug)
+    project = get_object_or_404(Project, slug=slug).settle()
 
     def stream():
         last, quiet = None, 0
         while True:
             project.refresh_from_db()
+            project.settle()
             state = {"status": project.status, "cards": [c.as_dict() for c in project.cards.all()]}
             if state != last:
                 yield f"data: {json.dumps(state)}\n\n"

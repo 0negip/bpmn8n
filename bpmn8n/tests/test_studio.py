@@ -8,6 +8,7 @@ from unittest.mock import patch
 
 from django.contrib.auth.models import User
 from django.test import TestCase, override_settings
+from django.utils import timezone
 
 from ..clients.llm import LLMError
 from ..models import Card, Project
@@ -305,6 +306,30 @@ class BuildTest(TestCase):
         self.assertIn("**LLM agent**: Drafts replies", (folder / "INTERVIEW.md").read_text())
         nodes = {n["name"]: n["type"] for n in json.loads((folder / "workflow.json").read_text())["nodes"]}
         self.assertEqual(nodes["Draft Reply"], "@n8n/n8n-nodes-langchain.agent")
+
+    def test_what_an_activity_prints_does_not_break_the_check(self):
+        noisy = ACTIVITY.replace("PRICES = {", 'print("loading prices")\nPRICES = {')
+        with patch.dict(os.environ, self.env, clear=True):
+            ProjectBuilder(self.project, FakeLLM(SPEC, noisy)).run()
+        self.assertEqual(self.project.status, Project.READY, [c.detail for c in self.project.cards.all()])
+
+    def test_an_activity_designed_twice_goes_back(self):
+        twice = {**SPEC, "activities": SPEC["activities"] * 2}
+        self.assertEqual(ProjectBuilder(self.project, FakeLLM()).design_problems(twice),
+                         ["activity quote_price: designed twice; describe it once"])
+
+    def test_a_job_that_died_ends(self):
+        """No heartbeat: the build failed, the interview goes on, and the page lets the person go on."""
+        self.client.force_login(User.objects.create_superuser("root", password="pw"))
+        research = Project.objects.create(name="Researching", status=Project.RESEARCH)
+        old = timezone.now() - Project.STALE * 2
+        Project.objects.filter(pk__in=[self.project.pk, research.pk]).update(updated=old)
+        self.client.get(f"/studio/{self.project.slug}/")
+        self.client.get("/studio/")
+        self.project.refresh_from_db(), research.refresh_from_db()
+        self.assertEqual((self.project.status, research.status), (Project.FAILED, Project.INTERVIEW))
+        alive = Project.objects.create(name="Building now", status=Project.BUILDING)
+        self.assertEqual(alive.settle().status, Project.BUILDING)
 
     def test_a_design_that_never_passes_fails_its_card(self):
         steps = [{**s, "endpoint": "no_such_task"} if s["type"] == "task" else s for s in SPEC["workflow"]["steps"]]

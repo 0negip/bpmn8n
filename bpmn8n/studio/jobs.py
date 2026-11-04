@@ -2,11 +2,14 @@
 request and any web worker restart) and shows its steps as cards (the kanban)."""
 import subprocess
 import sys
+import threading
+import time
 from pathlib import Path
 
 from django.conf import settings as django_settings
+from django.utils import timezone
 
-from ..models import Card
+from ..models import Card, Project
 
 ROOT = Path(django_settings.BASE_DIR)
 
@@ -21,6 +24,17 @@ def background(command, project, *args):
     log = open(ROOT / ".logs" / f"studio-{project.slug}.log", "a")  # noqa: SIM115 (the child owns it)
     subprocess.Popen([sys.executable, "manage.py", command, project.slug, *args], cwd=ROOT, stdout=log,
                      stderr=subprocess.STDOUT, start_new_session=True)
+
+
+def heartbeat(project, every=30):
+    """While the job's process lives, it says so: Project.settle ends a job that went quiet (killed, or
+    its container restarted), which would otherwise stay busy for ever."""
+    def beat():
+        while True:
+            time.sleep(every)
+            Project.objects.filter(pk=project.pk).update(updated=timezone.now())
+
+    threading.Thread(target=beat, daemon=True).start()
 
 
 class Board:

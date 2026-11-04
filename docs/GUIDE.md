@@ -187,12 +187,12 @@ The same states apply to messages: the losers of an Event-Based Gateway become *
 
 | Level | What it finds |
 |---|---|
-| error | a `@task` that does not exist or is of another kind than the node; a node nothing leads to that is not a trigger; an invalid condition; a Call Activity whose sub-process waits (people, messages). With the start data declared (`start_data`): a required input or a `{{variable}}` that no earlier step produces |
+| error | a workflow with no step after its trigger; a `@task` that does not exist or is of another kind than the node; a node nothing leads to that is not a trigger; an invalid condition; a Call Activity whose sub-process waits (people, messages). With the start data declared (`start_data`): a required input or a `{{variable}}` that no earlier step produces |
 | error | after an LLM agent, a path that reaches an end without passing through a person (User or Manual Task) |
 | warning | a gateway output that leads nowhere (for Laya also `default`: a person decides there); a lane without a group; no trigger; a sub-process that cannot be read; after a gateway (Laya or conditions), a path that reaches an end without a person (not for a conditions gateway that reads only fields of forms filled in before it: it applies a person's decision) |
 | info | without declared start data: the fields the webhook body must carry (the required inputs that no earlier step produces) |
 
-These are structural checks, not PM4Py's *soundness*, which gives false negatives on n8n workflows (a Merge is an inclusive join, parallel branches need not rejoin): tried on the four examples, it rejected two correct ones. Studio runs the check on every build and treats the "without a person" warning as an error too; a test checks that ACME's examples pass it (with that warning where they close a case on their own).
+These are structural checks, not PM4Py's *soundness*, which gives false negatives on n8n workflows (a Merge is an inclusive join, parallel branches need not rejoin): tried on the four examples, it rejected two correct ones. Studio runs the check on every build and treats the "without a person" warning as an error too (what its activities print goes to stderr, so the JSON report stays readable; a build or research whose process dies, killed or with its container restarted, is ended by the pages after 3 minutes without its heartbeat); a test checks that ACME's examples pass it (with that warning where they close a case on their own).
 
 ### BPMN coverage
 

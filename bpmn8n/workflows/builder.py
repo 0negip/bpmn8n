@@ -143,6 +143,8 @@ class Workflow:
     def user_task(self, name, title, lane, form, context="", description="", row=0, same_column=False,
                   kind="userTask"):
         """form: [(name, label, type)] with type string | number | boolean."""
+        if not all(isinstance(f, (list, tuple)) and len(f) == 3 for f in form):  # a dict would unpack its keys
+            raise ValueError("form: a list of [name, label, type]")
         return self.add(name, node_type(kind), {
             "title": title, "lane": lane, "description": description, "context": context,
             "form": {"fields": [{"name": n, "label": label, "type": t} for n, label, t in form]},
@@ -245,7 +247,11 @@ class Workflow:
         {"name": ..., "steps": [{"type": <one of STEPS>, "name": ..., <that method's arguments>}],
          "flows": [{"from": <step>, "branch": <output name, for gateways>, "to": [<step>, ...]}]}"""
         workflow, names = cls(spec.get("name") or "Untitled process", credential, chat_model), set()
-        for step in spec.get("steps", []):
+        steps, flows = spec.get("steps", []), spec.get("flows", [])
+        if not (isinstance(steps, list) and all(isinstance(s, dict) for s in steps)
+                and isinstance(flows, list) and all(isinstance(f, dict) for f in flows)):
+            raise SpecError('"steps" and "flows" must be lists of objects')
+        for step in steps:
             args = dict(step)
             kind, name = args.pop("type", None), args.get("name")
             if kind not in cls.STEPS:
@@ -255,15 +261,16 @@ class Workflow:
             names.add(name)
             try:
                 getattr(workflow, kind)(**args)
-            except TypeError as e:
-                raise SpecError(f"step {name!r} ({kind}): {e}") from e
-        for flow in spec.get("flows", []):
-            path = [flow.get("from"), *flow.get("to", [])]
+            except (TypeError, ValueError, AttributeError, KeyError, IndexError) as e:  # an argument of the wrong shape
+                raise SpecError(f"step {name!r} ({kind}): {type(e).__name__}: {e}") from e
+        for flow in flows:
+            to = flow.get("to", [])
+            path = [flow.get("from"), *(to if isinstance(to, list) else [to])]
             if unknown := [n for n in path if n not in names]:
                 raise SpecError(f"flow {flow}: no step named {unknown}")
             try:
-                workflow.flow(*path, output=flow.get("branch", 0))
-            except ValueError as e:
+                workflow.flow(*path, output=flow.get("branch") or 0)  # "branch": null on a plain flow
+            except (TypeError, ValueError) as e:
                 raise SpecError(f"flow {flow}: {e}") from e
         return workflow.layout()
 
