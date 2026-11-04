@@ -1,0 +1,225 @@
+{
+  "name": "ACME \u00b7 Ticket triage",
+  "nodes": [
+    {
+      "id": "02c39227-0654-4d4a-b2e1-2fe392338bf0",
+      "name": "Ticket Received",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "acme-ticket",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "webhookId": "1e61f396-8633-4d8f-8519-63ec370576ac"
+    },
+    {
+      "id": "1b6392e1-209b-4fd0-989b-684c38202afb",
+      "name": "Register Ticket",
+      "type": "CUSTOM.bpmn8nServiceTask",
+      "typeVersion": 1,
+      "position": [
+        280,
+        0
+      ],
+      "parameters": {
+        "task": "/api/tasks/register_ticket",
+        "output": "result",
+        "input": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        }
+      }
+    },
+    {
+      "id": "7c29e008-e498-4dbb-ba5e-d9f99b9d800c",
+      "name": "Route Ticket",
+      "type": "CUSTOM.bpmn8nExclusiveGateway",
+      "typeVersion": 1,
+      "position": [
+        560,
+        0
+      ],
+      "parameters": {
+        "decider": "laya",
+        "question": "Which team should handle this customer ticket?",
+        "state": "{{message}}",
+        "minConfidence": 0.7,
+        "branches": {
+          "values": [
+            {
+              "name": "billing",
+              "description": "problems with a payment already made: wrong or double charges, invoices, refunds"
+            },
+            {
+              "name": "technical",
+              "description": "the product does not work: bugs, errors, crashes, outages, login problems"
+            },
+            {
+              "name": "sales",
+              "description": "wants to buy more or new products, asks for a price quote, upgrade or demo"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "81a9c169-5f25-4a2c-9201-3212a112beb8",
+      "name": "Calculate Refund",
+      "type": "CUSTOM.bpmn8nBusinessRuleTask",
+      "typeVersion": 1,
+      "position": [
+        840,
+        -200
+      ],
+      "parameters": {
+        "task": "/api/tasks/calculate_refund",
+        "output": "result",
+        "input": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        }
+      }
+    },
+    {
+      "id": "b12fbc4f-fdd2-41b2-a965-5e0ee927885f",
+      "name": "Open Bug Report",
+      "type": "CUSTOM.bpmn8nSendTask",
+      "typeVersion": 1,
+      "position": [
+        840,
+        0
+      ],
+      "parameters": {
+        "task": "/api/tasks/open_bug_report",
+        "output": "result",
+        "input": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "summary": "{{message}}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        }
+      }
+    },
+    {
+      "id": "32135c5d-a224-4cd9-8287-6caa887b853b",
+      "name": "Notify Sales",
+      "type": "CUSTOM.bpmn8nSendTask",
+      "typeVersion": 1,
+      "position": [
+        840,
+        200
+      ],
+      "parameters": {
+        "task": "/api/tasks/send_notification",
+        "output": "result",
+        "input": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "to": "sales@acme.test",
+            "subject": "New sales lead: {{customer}}",
+            "body": "{{message}}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        }
+      }
+    },
+    {
+      "id": "c6794658-0edf-4d94-a160-5d54d8362cf9",
+      "name": "Triage Ticket",
+      "type": "CUSTOM.bpmn8nUserTask",
+      "typeVersion": 1,
+      "position": [
+        840,
+        400
+      ],
+      "parameters": {
+        "title": "Route the ticket of {{customer}}",
+        "lane": "support-leads",
+        "description": "Laya was not confident enough to route it.",
+        "context": "",
+        "form": {
+          "fields": [
+            {
+              "name": "team",
+              "label": "Team",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "webhookId": "222dfff0-aacb-4972-8697-af9898773f58"
+    }
+  ],
+  "connections": {
+    "Ticket Received": {
+      "main": [
+        [
+          {
+            "node": "Register Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Register Ticket": {
+      "main": [
+        [
+          {
+            "node": "Route Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Route Ticket": {
+      "main": [
+        [
+          {
+            "node": "Calculate Refund",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Open Bug Report",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify Sales",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Triage Ticket",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

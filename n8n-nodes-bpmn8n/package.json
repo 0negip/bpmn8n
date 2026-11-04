@@ -1,0 +1,44 @@
+{
+  "name": "n8n-nodes-bpmn8n",
+  "version": "0.1.0",
+  "description": "BPMN 2.0 nodes for n8n: tasks discovered from a bpmn8n (Django) OpenAPI spec, gateways decided by Laya",
+  "license": "MIT",
+  "keywords": [
+    "n8n-community-node-package",
+    "bpmn"
+  ],
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc --noEmit && mkdir -p dist && find dist -mindepth 1 -delete && tsc && cp -r nodes/icons dist/nodes/icons && node scripts/write-codex.js",
+    "test": "npm run build && node --test test/*.test.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/Bpmn8nApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/Bpmn8nServiceTask.node.js",
+      "dist/nodes/Bpmn8nScriptTask.node.js",
+      "dist/nodes/Bpmn8nBusinessRuleTask.node.js",
+      "dist/nodes/Bpmn8nSendTask.node.js",
+      "dist/nodes/Bpmn8nReceiveTask.node.js",
+      "dist/nodes/Bpmn8nUserTask.node.js",
+      "dist/nodes/Bpmn8nManualTask.node.js",
+      "dist/nodes/Bpmn8nCallActivity.node.js",
+      "dist/nodes/Bpmn8nExclusiveGateway.node.js",
+      "dist/nodes/Bpmn8nInclusiveGateway.node.js",
+      "dist/nodes/Bpmn8nParallelGateway.node.js",
+      "dist/nodes/Bpmn8nEventBasedGateway.node.js",
+      "dist/nodes/Bpmn8nTimerEvent.node.js",
+      "dist/nodes/Bpmn8nErrorEndEvent.node.js"
+    ]
+  },
+  "devDependencies": {
+    "n8n-workflow": "^2.16.0",
+    "typescript": "^5.9.0"
+  }
+}

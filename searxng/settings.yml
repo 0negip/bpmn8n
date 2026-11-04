@@ -1,0 +1,12 @@
+# SearXNG for bpmn8n Studio's domain research (docker-compose.yml: searxng). Only the web container
+# calls it, on the compose network, for its JSON API: no rate limiter, no image proxy.
+# The secret comes from SEARXNG_SECRET.
+use_default_settings:
+  engines:
+    remove: [ahmia, torch]  # Tor's: they do not load without Tor
+server:
+  limiter: false
+  image_proxy: false
+search:
+  formats: [html, json]
+  safe_search: 1

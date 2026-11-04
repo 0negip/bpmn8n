@@ -1,0 +1,25 @@
+{
+  "check_expense_policy": [
+    {"input": {"employee": "ann@acme.example", "category": "meal", "amount": 150, "attendees": 2},
+     "output": {"within_policy": false, "limit": 120.0, "excess": 30.0}},
+    {"input": {"employee": "bob@acme.example", "category": "hotel", "amount": 180},
+     "output": {"within_policy": true, "limit": 180.0, "excess": 0}}
+  ],
+  "calculate_refund": [
+    {"input": {"amount": 80}, "output": {"refund": 80.0, "automatic": true}},
+    {"input": {"amount": 450, "duplicate_charge": true}, "output": {"automatic": true}},
+    {"input": {"amount": 450}, "output": {"automatic": false}}
+  ],
+  "record_expense": [
+    {"input": {"employee": "ann", "amount": 40, "approved": true}, "output": {"status": "queued for payment"}},
+    {"input": {"employee": "ann", "amount": 40, "approved": false}, "output": {"status": "rejected"}}
+  ],
+  "normalize_alert": [
+    {"input": {"source": "edr", "raw": " host-7  beacon to 10.0.0.9 "},
+     "output": {"summary": "host-7 beacon to 10.0.0.9", "hosts": ["host-7"], "ips": ["10.0.0.9"]}}
+  ],
+  "get_book_status": [
+    {"input": {"request_id": "R-1", "book": "Dune"}, "output": {"available": false}},
+    {"input": {"request_id": "R-2", "book": "Emma"}, "output": {"available": true}}
+  ]
+}

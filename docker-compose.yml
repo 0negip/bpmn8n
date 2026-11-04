@@ -1,0 +1,143 @@
+# bpmn8n stack: Django (tasks API, inbox, Studio, docs) + n8n with the BPMN nodes + Laya and GLiNER models.
+services:
+  web:
+    image: python:3.12-slim
+    working_dir: /app
+    volumes: [".:/app"]
+    command: sh -c "pip install -q --root-user-action=ignore -r requirements.txt && python manage.py migrate --noinput && gunicorn bpmn8n.wsgi -b 0.0.0.0:8000 --workers $${WEB_WORKERS:-4} --threads 16 --backlog 2048 --keep-alive 0 --graceful-timeout 360 --reload --pid /tmp/gunicorn.pid --access-logfile -"
+    # several processes: tasks, event log and metrics live in Postgres (runserver dropped
+    # connections when n8n ran 30 cases at once); no keep-alive: clients reusing a connection
+    # the server was closing got "socket hang up"; the pid file lets Studio reload it with new tasks, and
+    # the graceful timeout lets a reload (Studio's, or --reload's) wait for LLM calls in flight (3 x 120 s)
+    ports: ["127.0.0.1:8000:8000"]
+    environment:
+      # ./start.sh sets them: the models server on the Mac (host.docker.internal:8001) or containers
+      LAYA_URL: ${LAYA_URL:-http://laya:8000/v1/systemone}
+      EXTRACTOR_URL: ${EXTRACTOR_URL:-http://models:8001/v1/extract}
+      OCR_URL: ${OCR_URL:-http://models:8001/v1/ocr}  # only the native models server on a Mac reads images
+      N8N_URL: http://n8n:5678  # user tasks resume executions here
+      N8N_PUBLIC_URL: ${N8N_PUBLIC_URL:-http://localhost:5678}  # links to the editor
+      N8N_API_KEY: ${N8N_API_KEY:-}  # ./start.sh creates it: conformance reads workflows, Studio creates them
+      N8N_PREVIEW_URL: ${N8N_PREVIEW_URL:-http://localhost:5679}  # Studio embeds the workflow's canvas from it
+      N8N_CREDENTIAL: ${N8N_CREDENTIAL:-}  # ./start.sh: the credential Studio's workflows use
+      SEARCH_URL: ${SEARCH_URL:-http://searxng:8080}  # Studio's domain research; empty: none
+      BPMN8N_API_TOKEN: ${BPMN8N_API_TOKEN:-}
+      WEB_WORKERS: ${WEB_WORKERS:-4}
+      POSTGRES_HOST: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bpmn8n-dev}
+    depends_on:
+      postgres: {condition: service_healthy}
+
+  postgres:
+    image: postgres:17-alpine
+    environment:
+      POSTGRES_DB: bpmn8n
+      POSTGRES_USER: bpmn8n
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-bpmn8n-dev}
+    volumes: ["pg_data:/var/lib/postgresql/data"]
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "bpmn8n"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  # n8n in queue mode: `n8n` receives webhooks and serves the editor, `n8n-worker` runs the
+  # executions (scale with `docker compose up -d --scale n8n-worker=N`); Redis is the queue.
+  n8n: &n8n
+    image: docker.n8n.io/n8nio/n8n
+    ports: ["127.0.0.1:5678:5678"]
+    environment: &n8n-env
+      N8N_CUSTOM_EXTENSIONS: /bpmn8n-nodes  # ./start.sh builds n8n-nodes-bpmn8n into it
+      BPMN8N_PUBLIC_URL: ${BPMN8N_PUBLIC_URL:-http://localhost:8000}  # the human task nodes link to its pages
+      N8N_PERSONALIZATION_ENABLED: "false"
+      # pages allowed to show n8n's canvas in an iframe (e.g. a dashboard on :8080: set your page's
+      # origin); n8n otherwise sends X-Frame-Options: SAMEORIGIN, which CSP frame-ancestors supersedes
+      N8N_CONTENT_SECURITY_POLICY: '{"frame-ancestors": ["''self''", "http://localhost:8000", "http://127.0.0.1:8000", "http://localhost:8080", "http://127.0.0.1:8080"]}'
+      DB_TYPE: postgresdb
+      DB_POSTGRESDB_HOST: postgres
+      DB_POSTGRESDB_DATABASE: n8n
+      DB_POSTGRESDB_USER: bpmn8n
+      DB_POSTGRESDB_PASSWORD: ${POSTGRES_PASSWORD:-bpmn8n-dev}
+      EXECUTIONS_MODE: queue
+      EXECUTIONS_DATA_SAVE_ON_PROGRESS: "true"  # shows the completed nodes while the run is still going
+      QUEUE_BULL_REDIS_HOST: redis
+      OFFLOAD_MANUAL_EXECUTIONS_TO_WORKERS: "true"
+      N8N_RUNNERS_ENABLED: "true"
+      EXTERNAL_FRONTEND_HOOKS_URLS: /static/bpmn8n-bpmn.js?v=2  # BPMN shapes on the canvas; n8n caches /static for a day: bump v on edits
+    volumes:  # the shared n8n_data volume also shares the credentials' encryption key
+      - n8n_data:/home/node/.n8n
+      - ./n8n-nodes-bpmn8n/dist:/bpmn8n-nodes:ro
+      - ./n8n-editor/bpmn.js:/usr/local/lib/node_modules/n8n/node_modules/n8n-editor-ui/dist/static/bpmn8n-bpmn.js:ro
+    depends_on:
+      postgres: {condition: service_healthy}
+      redis: {condition: service_healthy}
+
+  n8n-worker:
+    <<: *n8n
+    command: worker --concurrency=20
+    ports: []
+
+  # A read-only canvas to embed in other pages (Studio shows each project's workflow with it), with n8n's
+  # own preview architecture (its n8n-demo component): an instance in preview mode opens /workflows/demo
+  # without login and draws the workflow received by postMessage; it stores and runs nothing.
+  n8n-preview:
+    image: docker.n8n.io/n8nio/n8n
+    ports: ["127.0.0.1:5679:5678"]
+    environment:
+      N8N_PREVIEW_MODE: "true"
+      N8N_CUSTOM_EXTENSIONS: /bpmn8n-nodes
+      N8N_PERSONALIZATION_ENABLED: "false"
+      N8N_DIAGNOSTICS_ENABLED: "false"
+      N8N_CONTENT_SECURITY_POLICY: '{"frame-ancestors": ["''self''", "http://localhost:8000", "http://127.0.0.1:8000", "http://localhost:8080", "http://127.0.0.1:8080"]}'
+      EXTERNAL_FRONTEND_HOOKS_URLS: /static/bpmn8n-bpmn.js?v=2;/static/bpmn8n-theme.js?v=6  # bump v on edits
+    volumes:
+      - ./n8n-nodes-bpmn8n/dist:/bpmn8n-nodes:ro
+      - ./n8n-editor/bpmn.js:/usr/local/lib/node_modules/n8n/node_modules/n8n-editor-ui/dist/static/bpmn8n-bpmn.js:ro
+      - ./n8n-editor/preview.js:/usr/local/lib/node_modules/n8n/node_modules/n8n-editor-ui/dist/static/bpmn8n-theme.js:ro
+
+  # web search for Studio's domain research: SearXNG asks several search engines and answers in JSON, with
+  # no API key; only the web container reaches it (no port on the host)
+  searxng:
+    image: docker.io/searxng/searxng
+    environment:
+      SEARXNG_SECRET: ${SEARXNG_SECRET:-bpmn8n-dev-searxng}
+    volumes: ["./searxng/settings.yml:/etc/searxng/settings.yml:ro"]
+
+  redis:
+    image: redis:7-alpine
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      retries: 30
+
+  models:
+    # GLiNER2.5 extraction on CPU, for hosts without the native models server
+    profiles: ["cpu-models"]
+    image: python:3.12-slim
+    working_dir: /app
+    command: sh -c "pip install -q --root-user-action=ignore --extra-index-url https://download.pytorch.org/whl/cpu 'gliner2[local]' protobuf sentencepiece tiktoken && python tools/models_server.py --host 0.0.0.0 --port 8001 --no-laya"
+    volumes: ["./tools:/app/tools:ro", "models_cache:/root/.cache"]
+
+  laya:
+    # Laya on CPU in Docker, for hosts without the native models server
+    profiles: ["cpu-models"]
+    # ponytail: pip install at boot (first start downloads torch + weights); use Laya's own Dockerfile for prod
+    image: python:3.12-slim
+    command: sh -c "pip install -q --root-user-action=ignore --extra-index-url https://download.pytorch.org/whl/cpu 'laya[serve]>=0.3.28' && laya-serve"
+    environment:
+      LAYA_HOST: 0.0.0.0
+      LAYA_PORT: "8000"
+      LAYA_DEVICE: cpu
+      LAYA_PRELOAD: "1"  # /health answers only once the checkpoints are loaded
+      LAYA_MODELS: english,multilingual  # what the router picks between; typed-decisions loads on demand
+    volumes: ["laya_cache:/root/.cache"]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=4)"]
+      interval: 10s
+      start_period: 20m
+
+volumes:
+  pg_data:
+  n8n_data:
+  laya_cache:
+  models_cache:

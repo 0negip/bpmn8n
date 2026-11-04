@@ -1,0 +1,227 @@
+{
+  "name": "ACME \u00b7 Incident response",
+  "nodes": [
+    {
+      "id": "fb3b7a79-d96b-4fe0-b1ec-4427e75aac4d",
+      "name": "Alert Received",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "acme-incident",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "webhookId": "bb404846-2b9e-48ce-a729-0f90ee1f70b6"
+    },
+    {
+      "id": "354c77a5-cf02-4a0e-932f-c200f98f004b",
+      "name": "Normalize Alert",
+      "type": "CUSTOM.bpmn8nScriptTask",
+      "typeVersion": 1,
+      "position": [
+        280,
+        0
+      ],
+      "parameters": {
+        "task": "/api/tasks/normalize_alert",
+        "output": "result",
+        "input": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        }
+      }
+    },
+    {
+      "id": "56848bff-ed49-46a3-b7db-31b604bbbcfa",
+      "name": "Assess Incident",
+      "type": "CUSTOM.bpmn8nInclusiveGateway",
+      "typeVersion": 1,
+      "position": [
+        560,
+        0
+      ],
+      "parameters": {
+        "decider": "laya",
+        "question": "",
+        "state": "{{summary}}",
+        "minConfidence": 0.5,
+        "branches": {
+          "values": [
+            {
+              "name": "isolate_host",
+              "description": "Is a device infected or compromised?"
+            },
+            {
+              "name": "reset_credentials",
+              "description": "Is a password compromised?"
+            },
+            {
+              "name": "notify_dpo",
+              "description": "Was personal data leaked?"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "a2aeb9f6-1828-479e-8488-78f21b74420c",
+      "name": "Isolate Host",
+      "type": "CUSTOM.bpmn8nServiceTask",
+      "typeVersion": 1,
+      "position": [
+        840,
+        -200
+      ],
+      "parameters": {
+        "task": "/api/tasks/isolate_host",
+        "output": "result",
+        "input": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "hostname": "{{hosts.0}}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        }
+      }
+    },
+    {
+      "id": "5bf8f6e4-030e-457d-a7cc-c6284bdf4439",
+      "name": "Reset Credentials",
+      "type": "CUSTOM.bpmn8nServiceTask",
+      "typeVersion": 1,
+      "position": [
+        840,
+        0
+      ],
+      "parameters": {
+        "task": "/api/tasks/reset_credentials",
+        "output": "result",
+        "input": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "username": "{{user}}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        }
+      }
+    },
+    {
+      "id": "2dc53989-3bcd-49c0-81d6-a36f22eb2f1c",
+      "name": "Notify DPO",
+      "type": "CUSTOM.bpmn8nSendTask",
+      "typeVersion": 1,
+      "position": [
+        840,
+        200
+      ],
+      "parameters": {
+        "task": "/api/tasks/send_notification",
+        "output": "result",
+        "input": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "to": "dpo@acme.test",
+            "subject": "Possible personal data breach (GDPR art. 33)",
+            "body": "{{summary}}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        }
+      }
+    },
+    {
+      "id": "afd6f15e-8878-4dcb-9e9d-84228b49af9d",
+      "name": "Review Alert",
+      "type": "CUSTOM.bpmn8nUserTask",
+      "typeVersion": 1,
+      "position": [
+        840,
+        400
+      ],
+      "parameters": {
+        "title": "Review the {{source}} alert",
+        "lane": "soc-analysts",
+        "description": "No automatic action was clearly needed; an analyst decides.",
+        "context": "",
+        "form": {
+          "fields": [
+            {
+              "name": "action",
+              "label": "Action taken",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "webhookId": "8a6b2b8d-92e6-49f8-a893-0f78e646a1d6"
+    }
+  ],
+  "connections": {
+    "Alert Received": {
+      "main": [
+        [
+          {
+            "node": "Normalize Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Normalize Alert": {
+      "main": [
+        [
+          {
+            "node": "Assess Incident",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assess Incident": {
+      "main": [
+        [
+          {
+            "node": "Isolate Host",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Reset Credentials",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify DPO",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Review Alert",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

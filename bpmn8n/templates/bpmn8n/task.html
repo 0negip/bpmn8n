@@ -1,0 +1,75 @@
+{% extends "bpmn8n/base.html" %}
+{% load bpmn8n %}
+{% block title %}{{ task.title }}{% endblock %}
+{% block crumbs %}<a href="{% url 'inbox' %}">Inbox</a><span aria-hidden="true">/</span><span>{{ task.title }}</span>{% endblock %}
+{% block main %}
+<div class="title-row">
+  <div>
+    <div class="title-line"><h1>{{ task.title }}</h1><span class="pill s-{{ task.status }}">{{ task.status }}</span></div>
+    <p class="sub">{% if task.kind == "manualTask" %}Manual task{% else %}User task{% endif %} “{{ task.activity }}”{% if task.process %} of {{ task.process }}{% endif %}{% if task.case_id %}, execution <span class="mono">#{{ task.execution }}</span>{% endif %} · {% if task.lane %}lane {{ task.lane }}{% else %}any lane{% endif %} · waiting for {{ task.created|waited }}</p>
+  </div>
+</div>
+<div class="with-rail">
+  <div class="stack">
+  <section class="panel" aria-labelledby="decision">
+    <header><h2 id="decision">{% if task.status == "completed" %}Decision{% elif task.kind == "manualTask" %}Confirm the work{% else %}Your decision{% endif %}</h2>
+      {% if task.status == "claimed" %}<span class="meta">Claimed by {% if mine %}you{% else %}{{ task.assignee }}{% endif %}</span>{% endif %}</header>
+    {% if task.description %}<p class="muted lead">{{ task.description }}</p>{% endif %}
+    {% if task.status == "completed" %}
+      <p class="lead">Completed{% if task.assignee %} by {{ task.assignee }}{% endif %}, {{ task.completed|waited }} ago.</p>
+      {% if task.result %}<dl class="kv">{% for k, v in task.result.items %}<dt>{{ k }}</dt><dd>{{ v }}</dd>{% endfor %}</dl>{% endif %}
+    {% elif task.status == "cancelled" %}
+      <p>Cancelled: {{ task.reason|default:"the process no longer waits for it" }}.</p>
+    {% elif task.status == "claimed" and not mine and not user.is_superuser %}
+      <p>{{ task.assignee }} is working on it. It comes back to the lane if they release it.</p>
+    {% else %}
+      <form class="fields" method="post" action="{% url 'act' task.pk 'complete' %}">
+        {% csrf_token %}
+        {% for f in task.form %}
+          {% if f.type == "boolean" %}
+            <label class="field check"><input type="checkbox" name="{{ f.name }}"> {{ f.label|default:f.name }}</label>
+          {% else %}
+            <label class="field"><span>{{ f.label|default:f.name }}</span>
+              <input class="input" type="{% if f.type == 'number' %}number{% else %}text{% endif %}" name="{{ f.name }}" step="any" required>
+            </label>
+          {% endif %}
+        {% endfor %}
+        <div class="form-actions">
+          <button class="btn primary" type="submit">{% if task.kind == "manualTask" %}Mark as done{% else %}Complete{% endif %}</button>
+          {% if task.status == "open" %}
+            <button class="btn" type="submit" formaction="{% url 'act' task.pk 'claim' %}" formnovalidate>Claim it</button>
+            <span class="meta">Claim it so nobody else works on it</span>
+          {% else %}
+            <button class="btn" type="submit" formaction="{% url 'act' task.pk 'release' %}" formnovalidate>Release</button>
+          {% endif %}
+        </div>
+      </form>
+    {% endif %}
+  </section>
+    {% if trail or task.case_id %}
+    <section class="panel" aria-labelledby="path">
+      <header><h2 id="path">How the case got here</h2><span class="meta num">{{ trail|length }} step{{ trail|length|pluralize }} before</span></header>
+      <ol class="trail">
+        {% for e in trail %}
+        <li class="{% if e.status == 'error' %}error{% endif %}">
+          <span>{{ e.activity }}</span>
+          <span class="who-when">{% if e.resource == "system" %}automatic{% else %}{{ e.resource }}{% endif %}{% if e.status == "error" %} · failed{% endif %}</span>
+          <time class="num" datetime="{{ e.started|date:'c' }}">{{ e.started|time:"H:i" }}</time>
+        </li>
+        {% endfor %}
+        {% if task.status == "open" or task.status == "claimed" %}
+        <li class="now"><span>{{ task.activity }}</span><span class="who-when">waiting for {% if task.status == "claimed" %}{{ task.assignee }}{% else %}the {{ task.lane|default:"any" }} lane{% endif %}</span><time>now</time></li>
+        {% endif %}
+      </ol>
+    </section>
+    {% endif %}
+  </div>
+  <div class="stack">
+    <section class="panel" aria-labelledby="data">
+      <header><h2 id="data">Case data</h2><span class="meta">what the process knows</span></header>
+      {% if task.context %}<dl class="kv">{% for k, v in task.context.items %}<dt>{{ k }}</dt><dd>{{ v }}</dd>{% endfor %}</dl>
+      {% else %}<p class="empty">No data came with this case.</p>{% endif %}
+    </section>
+  </div>
+</div>
+{% endblock %}

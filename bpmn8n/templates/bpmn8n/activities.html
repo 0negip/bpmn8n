@@ -1,0 +1,53 @@
+{% extends "bpmn8n/base.html" %}
+{% block title %}Activities{% endblock %}
+{% block crumbs %}<span>Activities</span>{% endblock %}
+{% block main %}
+<div class="title-row">
+  <div>
+    <h1>Activities</h1>
+    <p class="sub">{{ total }} Python function{{ total|pluralize }} registered with <code>@task</code> in {{ modules|length }} project{{ modules|length|pluralize }}. The BPMN node of each kind lists them in n8n at once, with their inputs as its fields.</p>
+  </div>
+</div>
+<nav class="tabs" aria-label="Node kind">
+  <a href="{% url 'activities' %}" {% if not kind %}aria-current="page"{% endif %}>All<span class="num muted">{{ total }}</span></a>
+  {% for value, label, count in kinds %}<a href="?kind={{ value }}" {% if kind == value %}aria-current="page"{% endif %}>{{ label }}<span class="num muted">{{ count }}</span></a>{% endfor %}
+</nav>
+{% for t in tasks %}
+<details class="activity" id="{{ t.name }}">
+  <summary>
+    <span class="name">{{ t.name }}</span>
+    <span class="pill">{{ t.label }}</span>
+    <span class="what">{{ t.description|default:"No description: write one as the function's docstring." }} <span class="meta">· {{ t.module }}</span></span>
+    <span class="count num">{{ t.inputs|length }} in · {% if t.output %}{{ t.outputs|length }} out{% else %}result not declared{% endif %}</span>
+  </summary>
+  <div class="body">
+    <div>
+      <h3>Its decorator and code</h3>
+      <pre><code>{{ t.source }}</code></pre>
+    </div>
+    <div class="stack">
+      <div>
+        <h3>Input · the node's fields, and what GLiNER or Laya extract from text</h3>
+        <table>
+          <thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Required</th><th scope="col">Description</th></tr></thead>
+          <tbody>{% for f in t.inputs %}<tr><td>{{ f.name }}</td><td>{% if f.choices %}{{ f.choices|join:" · " }}{% else %}{{ f.kind }}{% endif %}</td><td>{% if f.required %}yes{% else %}<span class="muted">no</span>{% endif %}</td><td>{{ f.description }}</td></tr>{% endfor %}</tbody>
+        </table>
+      </div>
+      <div>
+        <h3>Result · process variables for the next steps</h3>
+        {% if t.output %}
+        <table>
+          <thead><tr><th scope="col">Field</th><th scope="col">Type</th><th scope="col">Description</th></tr></thead>
+          <tbody>{% for f in t.outputs %}<tr><td>{{ f.name }}</td><td>{{ f.kind }}</td><td>{{ f.description }}</td></tr>{% endfor %}</tbody>
+        </table>
+        {% else %}
+        <p class="empty">Not declared: give the function a return annotation (<code>-&gt; MyResult</code>) and the workflow check knows what it produces.</p>
+        {% endif %}
+      </div>
+    </div>
+  </div>
+</details>
+{% empty %}
+<p class="empty">No activity of this kind yet: write one in a project's tasks.py, or build a process in Studio.</p>
+{% endfor %}
+{% endblock %}

@@ -1,0 +1,250 @@
+{
+ "calculate_refund": [
+  {
+   "text": "You charged us twice for the March invoice, 49,90 EUR each time. Please refund the duplicate.",
+   "expected": {
+    "amount": 49.9,
+    "duplicate_charge": true
+   }
+  },
+  {
+   "text": "I see two identical payments of 120 USD on my card for the same subscription.",
+   "expected": {
+    "amount": 120,
+    "duplicate_charge": true
+   }
+  },
+  {
+   "text": "The same order was billed two times: 75.00 EUR and 75.00 EUR. Refund one please.",
+   "expected": {
+    "amount": 75,
+    "duplicate_charge": true
+   }
+  },
+  {
+   "text": "Double charge! 19.99 was taken twice this morning.",
+   "expected": {
+    "amount": 19.99,
+    "duplicate_charge": true
+   }
+  },
+  {
+   "text": "Mi avete addebitato due volte 35 euro per lo stesso ordine, rimborsatemene uno.",
+   "expected": {
+    "amount": 35,
+    "duplicate_charge": true
+   }
+  },
+  {
+   "text": "Il pagamento di 1.299,00 € risulta duplicato sull'estratto conto.",
+   "expected": {
+    "amount": 1299,
+    "duplicate_charge": true
+   }
+  },
+  {
+   "text": "Please refund the 30 EUR I paid for the cancelled webinar.",
+   "expected": {
+    "amount": 30,
+    "duplicate_charge": false
+   }
+  },
+  {
+   "text": "The product arrived broken, I want my 250 USD back.",
+   "expected": {
+    "amount": 250,
+    "duplicate_charge": false
+   }
+  },
+  {
+   "text": "I was charged 45 EUR but my plan costs 30 EUR. Refund the difference of 15 EUR.",
+   "expected": {
+    "amount": 15,
+    "duplicate_charge": false
+   }
+  },
+  {
+   "text": "Cancel my subscription and refund this month's 9.99.",
+   "expected": {
+    "amount": 9.99,
+    "duplicate_charge": false
+   }
+  },
+  {
+   "text": "Vorrei il rimborso di 60 euro per il corso annullato.",
+   "expected": {
+    "amount": 60,
+    "duplicate_charge": false
+   }
+  },
+  {
+   "text": "Il prodotto non funziona, rivoglio i miei 89,90 euro.",
+   "expected": {
+    "amount": 89.9,
+    "duplicate_charge": false
+   }
+  },
+  {
+   "text": "My plan is 30 EUR a month and I have been a customer for 4 years. Refund the 12 EUR overcharge.",
+   "expected": {
+    "amount": 12,
+    "duplicate_charge": false
+   }
+  },
+  {
+   "text": "Order 4471 shipped on 12 March. The 89 EUR jacket never arrived, please refund it.",
+   "expected": {
+    "amount": 89,
+    "duplicate_charge": false
+   }
+  },
+  {
+   "text": "Hi, please call me back about my account, my number is 0039 333 1234567.",
+   "expected": {
+    "amount": null,
+    "duplicate_charge": false
+   }
+  },
+  {
+   "text": "I want a refund. Ticket 2023 is still open after 15 days.",
+   "expected": {
+    "amount": null,
+    "duplicate_charge": false
+   }
+  },
+  {
+   "text": "Two payments of 64 EUR each went out on 3 May for invoice 1180, the same invoice.",
+   "expected": {
+    "amount": 64,
+    "duplicate_charge": true
+   }
+  }
+ ],
+ "check_expense_policy": [
+  {
+   "text": "Dinner with the Contoso procurement team, 4 people, total 180 EUR. Paid by ann@acme.test",
+   "expected": {
+    "employee": "ann@acme.test",
+    "category": "meal",
+    "amount": 180,
+    "attendees": 4
+   }
+  },
+  {
+   "text": "Train ticket Milan to Rome for the Enel workshop, 89 EUR, bob@acme.test",
+   "expected": {
+    "employee": "bob@acme.test",
+    "category": "travel",
+    "amount": 89,
+    "attendees": 1
+   }
+  },
+  {
+   "text": "Two nights at the Hilton Berlin for KubeCon, 410 EUR. Claimed by carla@acme.test",
+   "expected": {
+    "employee": "carla@acme.test",
+    "category": "hotel",
+    "amount": 410
+   }
+  },
+  {
+   "text": "Lunch with 3 candidates during interviews, 96.50 EUR, paid by dan@acme.test",
+   "expected": {
+    "employee": "dan@acme.test",
+    "category": "meal",
+    "amount": 96.5,
+    "attendees": 3
+   }
+  },
+  {
+   "text": "Taxi from the airport to the customer's office: 42 EUR (eva@acme.test)",
+   "expected": {
+    "employee": "eva@acme.test",
+    "category": "travel",
+    "amount": 42
+   }
+  },
+  {
+   "text": "Flight to London for the Barclays pitch, 230 GBP, frank@acme.test",
+   "expected": {
+    "employee": "frank@acme.test",
+    "category": "travel",
+    "amount": 230
+   }
+  },
+  {
+   "text": "Hotel near the Milan fair for 3 nights: 540 EUR. gina@acme.test",
+   "expected": {
+    "employee": "gina@acme.test",
+    "category": "hotel",
+    "amount": 540
+   }
+  },
+  {
+   "text": "Team pizza for 8 people after the release, 120 EUR, hugo@acme.test",
+   "expected": {
+    "employee": "hugo@acme.test",
+    "category": "meal",
+    "amount": 120,
+    "attendees": 8
+   }
+  },
+  {
+   "text": "Cena con il cliente Barilla, 2 persone, 150 euro. Pagato da ivo@acme.test",
+   "expected": {
+    "employee": "ivo@acme.test",
+    "category": "meal",
+    "amount": 150,
+    "attendees": 2
+   }
+  },
+  {
+   "text": "Biglietto del treno Roma-Napoli per la fiera, 45 euro, lia@acme.test",
+   "expected": {
+    "employee": "lia@acme.test",
+    "category": "travel",
+    "amount": 45
+   }
+  },
+  {
+   "text": "Notte in albergo a Torino per il cliente FCA: 130 €, max@acme.test",
+   "expected": {
+    "employee": "max@acme.test",
+    "category": "hotel",
+    "amount": 130
+   }
+  },
+  {
+   "text": "Printer toner for the office, 65 EUR, nora@acme.test",
+   "expected": {
+    "employee": "nora@acme.test",
+    "category": "other",
+    "amount": 65
+   }
+  },
+  {
+   "text": "Client lunch on 14 March at table 12 for 3 guests, 87 EUR, olga@acme.test",
+   "expected": {
+    "employee": "olga@acme.test",
+    "category": "meal",
+    "amount": 87,
+    "attendees": 3
+   }
+  },
+  {
+   "text": "Room 305 at the Marriott for 2 nights, invoice 99812, total 260 EUR, paul@acme.test",
+   "expected": {
+    "employee": "paul@acme.test",
+    "category": "hotel",
+    "amount": 260
+   }
+  },
+  {
+   "text": "Expense report for the Milan trip, see attachment. quinn@acme.test",
+   "expected": {
+    "employee": "quinn@acme.test",
+    "amount": null
+   }
+  }
+ ]
+}

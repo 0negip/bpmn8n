@@ -1,0 +1,46 @@
+{% extends "bpmn8n/base.html" %}
+{% load bpmn8n %}
+{% block title %}Studio{% endblock %}
+{% block crumbs %}<span>Studio</span>{% endblock %}
+{% block main %}
+<div class="title-row">
+  <div>
+    <h1>Studio</h1>
+    <p class="sub">{% if projects %}{{ projects|length }} process{{ projects|length|pluralize:"es" }} designed with the LLM, {{ ready_count }} built and checked{% else %}Describe a process: the LLM interviews you, then writes its activities and its n8n workflow, checked before they are loaded.{% endif %}</p>
+  </div>
+</div>
+<div class="with-rail">
+  <section aria-labelledby="processes">
+    <div class="section-head"><h2 id="processes">Processes</h2></div>
+    {% if projects %}
+    <div class="table-wrap">
+      <table class="as-rows">
+        <thead><tr><th scope="col">Process</th><th scope="col">Folder</th><th scope="col" class="n">Activities</th><th scope="col">Status</th><th scope="col" class="n">Updated</th></tr></thead>
+        <tbody>
+        {% for p in projects %}
+          <tr>
+            <td><a class="name" href="{% url 'project' p.slug %}">{{ p.name }}</a>{% if p.n8n_url %}<span class="sub"><a href="{{ p.n8n_url }}">open in n8n</a></span>{% endif %}</td>
+            <td class="line2"><span class="mono">projects/{{ p.slug }}</span></td>
+            <td class="n num line2">{% if p.activity_count is None %}—{% else %}{{ p.activity_count }}{% endif %}</td>
+            <td class="side"><span class="pill s-{{ p.status }}">{{ p.status }}</span></td>
+            <td class="n num">{{ p.updated|waited }}</td>
+          </tr>
+        {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <p class="empty">No process yet: start one with its name and a description.</p>
+    {% endif %}
+  </section>
+  <section class="panel" aria-labelledby="new">
+    <header><h2 id="new">New process</h2></header>
+    <form class="fields" method="post">
+      {% csrf_token %}
+      <label class="field"><span>Name</span><input class="input" type="text" name="name" required placeholder="Purchase requests"></label>
+      <label class="field"><span>What happens?</span><textarea class="input" name="description" rows="4" required placeholder="An employee asks to buy equipment; above 1,000 EUR a manager approves; then we order it from the supplier."></textarea></label>
+      <div class="form-actions"><button class="btn primary" type="submit" data-waiting="The LLM is thinking…">Start the interview</button></div>
+    </form>
+  </section>
+</div>
+{% endblock %}

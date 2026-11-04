@@ -1,0 +1,22 @@
+[
+  {"text": "Dinner with the Contoso procurement team to close the 2027 renewal contract.", "label": "business", "lang": "en"},
+  {"text": "Train ticket Milan-Rome for the client workshop at Enel.", "label": "business", "lang": "en"},
+  {"text": "Hotel in Berlin for the KubeCon conference where I gave a talk.", "label": "business", "lang": "en"},
+  {"text": "Taxi from the airport to the customer's office for the installation.", "label": "business", "lang": "en"},
+  {"text": "Lunch with a candidate during the on-site interview.", "label": "business", "lang": "en"},
+  {"text": "Cena con il cliente Barilla per la presentazione del progetto.", "label": "business", "lang": "it"},
+  {"text": "Biglietto aereo per la fiera SMAU dove abbiamo lo stand aziendale.", "label": "business", "lang": "it"},
+  {"text": "Pranzo di lavoro con il team durante l'offsite di pianificazione trimestrale.", "label": "business", "lang": "it"},
+  {"text": "Comida con el cliente de Telefónica para negociar el contrato.", "label": "business", "lang": "es"},
+  {"text": "Registration fee for the AWS Summit training day.", "label": "business", "lang": "en"},
+  {"text": "Birthday present for my nephew.", "label": "personal", "lang": "en"},
+  {"text": "Weekend in Paris with my wife.", "label": "personal", "lang": "en"},
+  {"text": "Groceries for the house.", "label": "personal", "lang": "en"},
+  {"text": "New running shoes for my marathon training.", "label": "personal", "lang": "en"},
+  {"text": "Netflix subscription for the family.", "label": "personal", "lang": "en"},
+  {"text": "Cena di compleanno con gli amici al ristorante.", "label": "personal", "lang": "it"},
+  {"text": "Vacanza al mare in agosto con i figli.", "label": "personal", "lang": "it"},
+  {"text": "Regalo di Natale per mia madre.", "label": "personal", "lang": "it"},
+  {"text": "Entradas de cine para mí y mi novia.", "label": "personal", "lang": "es"},
+  {"text": "Vet bill for my dog.", "label": "personal", "lang": "en"}
+]

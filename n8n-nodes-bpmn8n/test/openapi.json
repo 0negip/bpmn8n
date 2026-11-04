@@ -1,0 +1,2171 @@
+{
+ "openapi": "3.1.0",
+ "info": {
+  "title": "bpmn8n",
+  "version": "1",
+  "description": ""
+ },
+ "paths": {
+  "/api/metrics": {
+   "get": {
+    "operationId": "bpmn8n_api_get_metrics",
+    "summary": "Get Metrics",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "OK"
+     }
+    },
+    "description": "Calls, errors and timings per task/gateway/wait; `last_profile` after a profiled request.",
+    "tags": [
+     "observability"
+    ]
+   }
+  },
+  "/api/eventlog.csv": {
+   "get": {
+    "operationId": "bpmn8n_api_get_event_log",
+    "summary": "Get Event Log",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "since",
+      "schema": {
+       "anyOf": [
+        {
+         "format": "date-time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Since"
+      },
+      "required": false
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "OK"
+     }
+    },
+    "description": "Process-mining event log (PM4Py, Disco, ProM): one row per activity of each case,\nstreamed from the database.",
+    "tags": [
+     "observability"
+    ]
+   }
+  },
+  "/api/events": {
+   "post": {
+    "operationId": "bpmn8n_api_record_event",
+    "summary": "Record Event",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "title": "Response",
+         "type": "object"
+        }
+       }
+      }
+     },
+     "400": {
+      "description": "Bad Request",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "title": "Response",
+         "type": "object"
+        }
+       }
+      }
+     }
+    },
+    "description": "An instant event of the calling case (n8n execution) in the event log, e.g. a BPMN Error\nEnd Event; the activity is the X-Bpmn8n-Activity header (the n8n node name). Returns the\nmessage with its variables filled in.",
+    "tags": [
+     "observability"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/EventIn"
+       }
+      }
+     },
+     "required": true
+    }
+   }
+  },
+  "/api/cases/{case_id}": {
+   "get": {
+    "operationId": "bpmn8n_api_get_case",
+    "summary": "Get Case",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "case_id",
+      "schema": {
+       "title": "Case Id",
+       "type": "string"
+      },
+      "required": true
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "title": "Response",
+         "type": "object"
+        }
+       }
+      }
+     },
+     "404": {
+      "description": "Not Found",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "title": "Response",
+         "type": "object"
+        }
+       }
+      }
+     }
+    },
+    "description": "A case's process variables (what {{name}} templates read).",
+    "tags": [
+     "observability"
+    ]
+   }
+  },
+  "/api/processmining": {
+   "get": {
+    "operationId": "bpmn8n_api_get_process_mining",
+    "summary": "Get Process Mining",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "since",
+      "schema": {
+       "anyOf": [
+        {
+         "format": "date-time",
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Since"
+      },
+      "required": false
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "OK"
+     }
+    },
+    "description": "Per process (the n8n workflow): variants, directly-follows graph with branch\nprobabilities, and per-activity timings/resources, mined from the event log (cases started\nat or after `since`).",
+    "tags": [
+     "observability"
+    ]
+   }
+  },
+  "/api/tasks/send_notification": {
+   "post": {
+    "operationId": "send_notification",
+    "summary": "Send Notification",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "OK"
+     }
+    },
+    "description": "Sends an email through Django's mail backend (console in dev).",
+    "tags": [
+     "sendTask"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Notification"
+       }
+      }
+     },
+     "required": true
+    },
+    "x-bpmn-task": "sendTask"
+   }
+  },
+  "/api/tasks/send_notification/run": {
+   "post": {
+    "operationId": "send_notification_run",
+    "summary": "Run",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RunOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Unprocessable Entity",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "title": "Response",
+         "type": "object"
+        }
+       }
+      }
+     }
+    },
+    "tags": [
+     "sendTask"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RunIn"
+       }
+      }
+     },
+     "required": true
+    }
+   }
+  },
+  "/api/tasks/register_ticket": {
+   "post": {
+    "operationId": "register_ticket",
+    "summary": "Register Ticket",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "OK"
+     }
+    },
+    "description": "Registers the ticket in the helpdesk and returns its id.",
+    "tags": [
+     "serviceTask"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Ticket"
+       }
+      }
+     },
+     "required": true
+    },
+    "x-bpmn-task": "serviceTask"
+   }
+  },
+  "/api/tasks/register_ticket/run": {
+   "post": {
+    "operationId": "register_ticket_run",
+    "summary": "Run",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RunOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Unprocessable Entity",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "title": "Response",
+         "type": "object"
+        }
+       }
+      }
+     }
+    },
+    "tags": [
+     "serviceTask"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RunIn"
+       }
+      }
+     },
+     "required": true
+    }
+   }
+  },
+  "/api/tasks/calculate_refund": {
+   "post": {
+    "operationId": "calculate_refund",
+    "summary": "Calculate Refund",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "OK"
+     }
+    },
+    "description": "Duplicate charges are refunded in full; other refunds up to 100 are automatic, above\nthat a manager must approve.",
+    "tags": [
+     "businessRuleTask"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RefundRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "x-bpmn-task": "businessRuleTask"
+   }
+  },
+  "/api/tasks/calculate_refund/run": {
+   "post": {
+    "operationId": "calculate_refund_run",
+    "summary": "Run",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RunOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Unprocessable Entity",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "title": "Response",
+         "type": "object"
+        }
+       }
+      }
+     }
+    },
+    "tags": [
+     "businessRuleTask"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RunIn"
+       }
+      }
+     },
+     "required": true
+    }
+   }
+  },
+  "/api/tasks/open_bug_report": {
+   "post": {
+    "operationId": "open_bug_report",
+    "summary": "Open Bug Report",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "OK"
+     }
+    },
+    "description": "Files a bug report for engineering, linked to the ticket.",
+    "tags": [
+     "sendTask"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BugReport"
+       }
+      }
+     },
+     "required": true
+    },
+    "x-bpmn-task": "sendTask"
+   }
+  },
+  "/api/tasks/open_bug_report/run": {
+   "post": {
+    "operationId": "open_bug_report_run",
+    "summary": "Run",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RunOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Unprocessable Entity",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "title": "Response",
+         "type": "object"
+        }
+       }
+      }
+     }
+    },
+    "tags": [
+     "sendTask"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RunIn"
+       }
+      }
+     },
+     "required": true
+    }
+   }
+  },
+  "/api/tasks/check_expense_policy": {
+   "post": {
+    "operationId": "check_expense_policy",
+    "summary": "Check Expense Policy",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "OK"
+     }
+    },
+    "description": "Per-person limit by category (meal 60, travel 500, hotel 180, other 100).",
+    "tags": [
+     "businessRuleTask"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Expense"
+       }
+      }
+     },
+     "required": true
+    },
+    "x-bpmn-task": "businessRuleTask"
+   }
+  },
+  "/api/tasks/check_expense_policy/run": {
+   "post": {
+    "operationId": "check_expense_policy_run",
+    "summary": "Run",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RunOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Unprocessable Entity",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "title": "Response",
+         "type": "object"
+        }
+       }
+      }
+     }
+    },
+    "tags": [
+     "businessRuleTask"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RunIn"
+       }
+      }
+     },
+     "required": true
+    }
+   }
+  },
+  "/api/tasks/record_expense": {
+   "post": {
+    "operationId": "record_expense",
+    "summary": "Record Expense",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "OK"
+     }
+    },
+    "description": "Books the expense in the accounting system (approved ones are queued for payment).",
+    "tags": [
+     "serviceTask"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ExpenseRecord"
+       }
+      }
+     },
+     "required": true
+    },
+    "x-bpmn-task": "serviceTask"
+   }
+  },
+  "/api/tasks/record_expense/run": {
+   "post": {
+    "operationId": "record_expense_run",
+    "summary": "Run",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RunOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Unprocessable Entity",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "title": "Response",
+         "type": "object"
+        }
+       }
+      }
+     }
+    },
+    "tags": [
+     "serviceTask"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RunIn"
+       }
+      }
+     },
+     "required": true
+    }
+   }
+  },
+  "/api/tasks/normalize_alert": {
+   "post": {
+    "operationId": "normalize_alert",
+    "summary": "Normalize Alert",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "OK"
+     }
+    },
+    "description": "Collapses whitespace and extracts hostnames (host-123) and IPv4 addresses.",
+    "tags": [
+     "scriptTask"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Alert"
+       }
+      }
+     },
+     "required": true
+    },
+    "x-bpmn-task": "scriptTask"
+   }
+  },
+  "/api/tasks/normalize_alert/run": {
+   "post": {
+    "operationId": "normalize_alert_run",
+    "summary": "Run",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RunOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Unprocessable Entity",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "title": "Response",
+         "type": "object"
+        }
+       }
+      }
+     }
+    },
+    "tags": [
+     "scriptTask"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RunIn"
+       }
+      }
+     },
+     "required": true
+    }
+   }
+  },
+  "/api/tasks/isolate_host": {
+   "post": {
+    "operationId": "isolate_host",
+    "summary": "Isolate Host",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "OK"
+     }
+    },
+    "description": "Asks the EDR to cut the host off the network.",
+    "tags": [
+     "serviceTask"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Host"
+       }
+      }
+     },
+     "required": true
+    },
+    "x-bpmn-task": "serviceTask"
+   }
+  },
+  "/api/tasks/isolate_host/run": {
+   "post": {
+    "operationId": "isolate_host_run",
+    "summary": "Run",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RunOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Unprocessable Entity",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "title": "Response",
+         "type": "object"
+        }
+       }
+      }
+     }
+    },
+    "tags": [
+     "serviceTask"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RunIn"
+       }
+      }
+     },
+     "required": true
+    }
+   }
+  },
+  "/api/tasks/reset_credentials": {
+   "post": {
+    "operationId": "reset_credentials",
+    "summary": "Reset Credentials",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "OK"
+     }
+    },
+    "description": "Forces a password reset and revokes active sessions in the identity provider.",
+    "tags": [
+     "serviceTask"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/Account"
+       }
+      }
+     },
+     "required": true
+    },
+    "x-bpmn-task": "serviceTask"
+   }
+  },
+  "/api/tasks/reset_credentials/run": {
+   "post": {
+    "operationId": "reset_credentials_run",
+    "summary": "Run",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RunOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Unprocessable Entity",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "title": "Response",
+         "type": "object"
+        }
+       }
+      }
+     }
+    },
+    "tags": [
+     "serviceTask"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RunIn"
+       }
+      }
+     },
+     "required": true
+    }
+   }
+  },
+  "/api/tasks/get_book_status": {
+   "post": {
+    "operationId": "get_book_status",
+    "summary": "Get Book Status",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "OK"
+     }
+    },
+    "description": "Asks the catalogue whether the book is on the shelf.",
+    "tags": [
+     "serviceTask"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BookRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "x-bpmn-task": "serviceTask"
+   }
+  },
+  "/api/tasks/get_book_status/run": {
+   "post": {
+    "operationId": "get_book_status_run",
+    "summary": "Run",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RunOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Unprocessable Entity",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "title": "Response",
+         "type": "object"
+        }
+       }
+      }
+     }
+    },
+    "tags": [
+     "serviceTask"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RunIn"
+       }
+      }
+     },
+     "required": true
+    }
+   }
+  },
+  "/api/tasks/hold_book": {
+   "post": {
+    "operationId": "hold_book",
+    "summary": "Hold Book",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "OK"
+     }
+    },
+    "description": "Puts the reader in the reservation queue for the book.",
+    "tags": [
+     "serviceTask"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BookRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "x-bpmn-task": "serviceTask"
+   }
+  },
+  "/api/tasks/hold_book/run": {
+   "post": {
+    "operationId": "hold_book_run",
+    "summary": "Run",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RunOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Unprocessable Entity",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "title": "Response",
+         "type": "object"
+        }
+       }
+      }
+     }
+    },
+    "tags": [
+     "serviceTask"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RunIn"
+       }
+      }
+     },
+     "required": true
+    }
+   }
+  },
+  "/api/tasks/update_catalogue": {
+   "post": {
+    "operationId": "update_catalogue",
+    "summary": "Update Catalogue",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "OK"
+     }
+    },
+    "description": "Marks the book as lent in the catalogue.",
+    "tags": [
+     "serviceTask"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/BookRequest"
+       }
+      }
+     },
+     "required": true
+    },
+    "x-bpmn-task": "serviceTask"
+   }
+  },
+  "/api/tasks/update_catalogue/run": {
+   "post": {
+    "operationId": "update_catalogue_run",
+    "summary": "Run",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/RunOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Unprocessable Entity",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "title": "Response",
+         "type": "object"
+        }
+       }
+      }
+     }
+    },
+    "tags": [
+     "serviceTask"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/RunIn"
+       }
+      }
+     },
+     "required": true
+    }
+   }
+  },
+  "/api/gateways/exclusive": {
+   "post": {
+    "operationId": "bpmn8n_gateways_exclusive_gateway",
+    "summary": "Exclusive Gateway",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/GatewayOut"
+        }
+       }
+      }
+     }
+    },
+    "description": "Exactly one branch: a Laya `choice` question over the branches.",
+    "tags": [
+     "gateways"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/GatewayIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "x-bpmn-gateway": "exclusiveGateway"
+   }
+  },
+  "/api/gateways/inclusive": {
+   "post": {
+    "operationId": "bpmn8n_gateways_inclusive_gateway",
+    "summary": "Inclusive Gateway",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/GatewayOut"
+        }
+       }
+      }
+     }
+    },
+    "description": "One or more branches: a Laya yes/no per branch (\"<question> <description>\"), all in one\nforward pass. Takes every branch with P(yes) >= min_confidence (default 0.5).",
+    "tags": [
+     "gateways"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/GatewayIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "x-bpmn-gateway": "inclusiveGateway"
+   }
+  },
+  "/api/gateways/conditions": {
+   "post": {
+    "operationId": "bpmn8n_gateways_conditions_gateway",
+    "summary": "Conditions Gateway",
+    "parameters": [],
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/GatewayOut"
+        }
+       }
+      }
+     },
+     "422": {
+      "description": "Unprocessable Entity",
+      "content": {
+       "application/json": {
+        "schema": {
+         "additionalProperties": true,
+         "title": "Response",
+         "type": "object"
+        }
+       }
+      }
+     }
+    },
+    "description": "Decided on data: the branches whose condition holds on the process variables (exclusive:\nthe first one). No branch -> the BPMN default flow.",
+    "tags": [
+     "gateways"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/ConditionsIn"
+       }
+      }
+     },
+     "required": true
+    },
+    "x-bpmn-gateway": "exclusiveGateway|inclusiveGateway"
+   }
+  },
+  "/api/usertasks": {
+   "post": {
+    "operationId": "bpmn8n_usertasks_create_user_task",
+    "summary": "Create User Task",
+    "parameters": [],
+    "responses": {
+     "201": {
+      "description": "Created",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/UserTaskOut"
+        }
+       }
+      }
+     }
+    },
+    "tags": [
+     "userTask"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/UserTaskIn"
+       }
+      }
+     },
+     "required": true
+    }
+   },
+   "get": {
+    "operationId": "bpmn8n_usertasks_list_user_tasks",
+    "summary": "List User Tasks",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "status",
+      "schema": {
+       "default": "open",
+       "title": "Status",
+       "type": "string"
+      },
+      "required": false
+     },
+     {
+      "in": "query",
+      "name": "lane",
+      "schema": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "null"
+        }
+       ],
+       "title": "Lane"
+      },
+      "required": false
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/UserTaskOut"
+         },
+         "title": "Response",
+         "type": "array"
+        }
+       }
+      }
+     }
+    },
+    "tags": [
+     "userTask"
+    ]
+   }
+  },
+  "/api/usertasks/{task_id}/complete": {
+   "post": {
+    "operationId": "bpmn8n_usertasks_complete_user_task",
+    "summary": "Complete User Task",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "task_id",
+      "schema": {
+       "title": "Task Id",
+       "type": "integer"
+      },
+      "required": true
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/UserTaskOut"
+        }
+       }
+      }
+     }
+    },
+    "tags": [
+     "userTask"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "additionalProperties": true,
+        "title": "Result",
+        "type": "object"
+       }
+      }
+     },
+     "required": true
+    }
+   }
+  },
+  "/api/messages/subscriptions": {
+   "post": {
+    "operationId": "bpmn8n_messages_subscribe",
+    "summary": "Subscribe",
+    "parameters": [],
+    "responses": {
+     "201": {
+      "description": "Created",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SubscriptionOut"
+        }
+       }
+      }
+     }
+    },
+    "tags": [
+     "messages"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/SubscriptionIn"
+       }
+      }
+     },
+     "required": true
+    }
+   },
+   "get": {
+    "operationId": "bpmn8n_messages_list_subscriptions",
+    "summary": "List Subscriptions",
+    "parameters": [
+     {
+      "in": "query",
+      "name": "status",
+      "schema": {
+       "default": "open",
+       "title": "Status",
+       "type": "string"
+      },
+      "required": false
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "items": {
+          "$ref": "#/components/schemas/SubscriptionOut"
+         },
+         "title": "Response",
+         "type": "array"
+        }
+       }
+      }
+     }
+    },
+    "tags": [
+     "messages"
+    ]
+   }
+  },
+  "/api/messages/{name}": {
+   "post": {
+    "operationId": "bpmn8n_messages_deliver_message",
+    "summary": "Deliver Message",
+    "parameters": [
+     {
+      "in": "path",
+      "name": "name",
+      "schema": {
+       "title": "Name",
+       "type": "string"
+      },
+      "required": true
+     }
+    ],
+    "responses": {
+     "200": {
+      "description": "OK",
+      "content": {
+       "application/json": {
+        "schema": {
+         "$ref": "#/components/schemas/SubscriptionOut"
+        }
+       }
+      }
+     }
+    },
+    "description": "Delivers the message to the oldest execution waiting for it with this correlation key\n(an event-based gateway: the first message wins, its alternatives are closed). 404 when none\nis waiting or its timeout passed: BPMN messages are not queued.",
+    "tags": [
+     "messages"
+    ],
+    "requestBody": {
+     "content": {
+      "application/json": {
+       "schema": {
+        "$ref": "#/components/schemas/MessageIn"
+       }
+      }
+     },
+     "required": true
+    }
+   }
+  }
+ },
+ "components": {
+  "schemas": {
+   "EventIn": {
+    "properties": {
+     "status": {
+      "default": "complete",
+      "enum": [
+       "complete",
+       "error"
+      ],
+      "title": "Status",
+      "type": "string"
+     },
+     "message": {
+      "default": "",
+      "title": "Message",
+      "type": "string"
+     },
+     "item": {
+      "additionalProperties": true,
+      "default": {},
+      "title": "Item",
+      "type": "object"
+     }
+    },
+    "title": "EventIn",
+    "type": "object"
+   },
+   "Notification": {
+    "properties": {
+     "to": {
+      "description": "Email address of the recipient",
+      "title": "To",
+      "type": "string"
+     },
+     "subject": {
+      "description": "Subject line of the message",
+      "title": "Subject",
+      "type": "string"
+     },
+     "body": {
+      "default": "",
+      "description": "Text of the message",
+      "title": "Body",
+      "type": "string"
+     }
+    },
+    "required": [
+     "to",
+     "subject"
+    ],
+    "title": "Notification",
+    "type": "object"
+   },
+   "RunOut": {
+    "properties": {
+     "result": {
+      "title": "Result"
+     },
+     "extracted": {
+      "additionalProperties": {
+       "additionalProperties": true,
+       "type": "object"
+      },
+      "default": {},
+      "title": "Extracted",
+      "type": "object"
+     }
+    },
+    "required": [
+     "result"
+    ],
+    "title": "RunOut",
+    "type": "object"
+   },
+   "RunIn": {
+    "properties": {
+     "fields": {
+      "additionalProperties": true,
+      "default": {},
+      "title": "Fields",
+      "type": "object"
+     },
+     "item": {
+      "additionalProperties": true,
+      "default": {},
+      "title": "Item",
+      "type": "object"
+     },
+     "text": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Text"
+     },
+     "min_confidence": {
+      "default": 0.5,
+      "title": "Min Confidence",
+      "type": "number"
+     },
+     "verify": {
+      "default": false,
+      "title": "Verify",
+      "type": "boolean"
+     }
+    },
+    "title": "RunIn",
+    "type": "object"
+   },
+   "Ticket": {
+    "properties": {
+     "customer": {
+      "description": "Company that wrote the ticket",
+      "title": "Customer",
+      "type": "string"
+     },
+     "message": {
+      "description": "What the customer asks or reports",
+      "title": "Message",
+      "type": "string"
+     },
+     "channel": {
+      "default": "email",
+      "description": "How the customer contacted us",
+      "enum": [
+       "email",
+       "chat",
+       "phone"
+      ],
+      "title": "Channel",
+      "type": "string"
+     }
+    },
+    "required": [
+     "customer",
+     "message"
+    ],
+    "title": "Ticket",
+    "type": "object"
+   },
+   "RefundRequest": {
+    "properties": {
+     "amount": {
+      "description": "Money amount to refund, with currency",
+      "title": "Amount",
+      "type": "number"
+     },
+     "duplicate_charge": {
+      "default": false,
+      "description": "Was the customer charged twice for the same thing?",
+      "title": "Duplicate Charge",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "amount"
+    ],
+    "title": "RefundRequest",
+    "type": "object"
+   },
+   "BugReport": {
+    "properties": {
+     "ticket_id": {
+      "description": "Ticket number, like TCK-1234",
+      "title": "Ticket Id",
+      "type": "string"
+     },
+     "summary": {
+      "description": "Short description of the problem",
+      "title": "Summary",
+      "type": "string"
+     }
+    },
+    "required": [
+     "ticket_id",
+     "summary"
+    ],
+    "title": "BugReport",
+    "type": "object"
+   },
+   "Expense": {
+    "properties": {
+     "employee": {
+      "description": "Email or name of the employee who paid",
+      "title": "Employee",
+      "type": "string"
+     },
+     "category": {
+      "description": "Kind of expense",
+      "enum": [
+       "meal",
+       "travel",
+       "hotel",
+       "other"
+      ],
+      "title": "Category",
+      "type": "string"
+     },
+     "amount": {
+      "description": "Total amount paid, with currency",
+      "title": "Amount",
+      "type": "number"
+     },
+     "attendees": {
+      "default": 1,
+      "description": "Number of people the expense was for",
+      "title": "Attendees",
+      "type": "integer"
+     }
+    },
+    "required": [
+     "employee",
+     "category",
+     "amount"
+    ],
+    "title": "Expense",
+    "type": "object"
+   },
+   "ExpenseRecord": {
+    "properties": {
+     "employee": {
+      "description": "Email or name of the employee",
+      "title": "Employee",
+      "type": "string"
+     },
+     "amount": {
+      "description": "Amount of the expense",
+      "title": "Amount",
+      "type": "number"
+     },
+     "approved": {
+      "description": "Was the expense approved?",
+      "title": "Approved",
+      "type": "boolean"
+     }
+    },
+    "required": [
+     "employee",
+     "amount",
+     "approved"
+    ],
+    "title": "ExpenseRecord",
+    "type": "object"
+   },
+   "Alert": {
+    "properties": {
+     "source": {
+      "description": "System that raised the alert, like EDR or DLP",
+      "title": "Source",
+      "type": "string"
+     },
+     "raw": {
+      "description": "Text of the alert",
+      "title": "Raw",
+      "type": "string"
+     }
+    },
+    "required": [
+     "source",
+     "raw"
+    ],
+    "title": "Alert",
+    "type": "object"
+   },
+   "Host": {
+    "properties": {
+     "hostname": {
+      "description": "Name of the computer, like host-42",
+      "title": "Hostname",
+      "type": "string"
+     }
+    },
+    "required": [
+     "hostname"
+    ],
+    "title": "Host",
+    "type": "object"
+   },
+   "Account": {
+    "properties": {
+     "username": {
+      "description": "User account name",
+      "title": "Username",
+      "type": "string"
+     }
+    },
+    "required": [
+     "username"
+    ],
+    "title": "Account",
+    "type": "object"
+   },
+   "BookRequest": {
+    "properties": {
+     "request_id": {
+      "description": "Request number",
+      "title": "Request Id",
+      "type": "string"
+     },
+     "book": {
+      "description": "Title of the book",
+      "title": "Book",
+      "type": "string"
+     }
+    },
+    "required": [
+     "request_id",
+     "book"
+    ],
+    "title": "BookRequest",
+    "type": "object"
+   },
+   "GatewayOut": {
+    "properties": {
+     "branches": {
+      "items": {
+       "type": "string"
+      },
+      "title": "Branches",
+      "type": "array"
+     },
+     "scores": {
+      "additionalProperties": {
+       "anyOf": [
+        {
+         "type": "number"
+        },
+        {
+         "type": "null"
+        }
+       ]
+      },
+      "title": "Scores",
+      "type": "object"
+     }
+    },
+    "required": [
+     "branches",
+     "scores"
+    ],
+    "title": "GatewayOut",
+    "type": "object"
+   },
+   "GatewayIn": {
+    "properties": {
+     "question": {
+      "default": "",
+      "title": "Question",
+      "type": "string"
+     },
+     "branches": {
+      "additionalProperties": {
+       "type": "string"
+      },
+      "title": "Branches",
+      "type": "object"
+     },
+     "state": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "State"
+     },
+     "min_confidence": {
+      "anyOf": [
+       {
+        "type": "number"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Min Confidence"
+     },
+     "item": {
+      "additionalProperties": true,
+      "default": {},
+      "title": "Item",
+      "type": "object"
+     }
+    },
+    "required": [
+     "branches"
+    ],
+    "title": "GatewayIn",
+    "type": "object"
+   },
+   "ConditionsIn": {
+    "properties": {
+     "kind": {
+      "enum": [
+       "exclusive",
+       "inclusive"
+      ],
+      "title": "Kind",
+      "type": "string"
+     },
+     "conditions": {
+      "additionalProperties": {
+       "anyOf": [
+        {
+         "type": "string"
+        },
+        {
+         "type": "boolean"
+        }
+       ]
+      },
+      "title": "Conditions",
+      "type": "object"
+     },
+     "item": {
+      "additionalProperties": true,
+      "default": {},
+      "title": "Item",
+      "type": "object"
+     }
+    },
+    "required": [
+     "kind",
+     "conditions"
+    ],
+    "title": "ConditionsIn",
+    "type": "object"
+   },
+   "FormField": {
+    "properties": {
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "label": {
+      "default": "",
+      "title": "Label",
+      "type": "string"
+     },
+     "type": {
+      "default": "string",
+      "enum": [
+       "string",
+       "number",
+       "boolean"
+      ],
+      "title": "Type",
+      "type": "string"
+     }
+    },
+    "required": [
+     "name"
+    ],
+    "title": "FormField",
+    "type": "object"
+   },
+   "UserTaskOut": {
+    "properties": {
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "kind": {
+      "title": "Kind",
+      "type": "string"
+     },
+     "title": {
+      "title": "Title",
+      "type": "string"
+     },
+     "activity": {
+      "title": "Activity",
+      "type": "string"
+     },
+     "description": {
+      "title": "Description",
+      "type": "string"
+     },
+     "lane": {
+      "title": "Lane",
+      "type": "string"
+     },
+     "case_id": {
+      "title": "Case Id",
+      "type": "string"
+     },
+     "form": {
+      "items": {
+       "$ref": "#/components/schemas/FormField"
+      },
+      "title": "Form",
+      "type": "array"
+     },
+     "context": {
+      "additionalProperties": true,
+      "title": "Context",
+      "type": "object"
+     },
+     "status": {
+      "title": "Status",
+      "type": "string"
+     },
+     "result": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Result"
+     },
+     "created": {
+      "format": "date-time",
+      "title": "Created",
+      "type": "string"
+     },
+     "completed": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Completed"
+     }
+    },
+    "required": [
+     "id",
+     "kind",
+     "title",
+     "activity",
+     "description",
+     "lane",
+     "case_id",
+     "form",
+     "context",
+     "status",
+     "result",
+     "created",
+     "completed"
+    ],
+    "title": "UserTaskOut",
+    "type": "object"
+   },
+   "UserTaskIn": {
+    "properties": {
+     "kind": {
+      "default": "userTask",
+      "enum": [
+       "userTask",
+       "manualTask"
+      ],
+      "title": "Kind",
+      "type": "string"
+     },
+     "title": {
+      "title": "Title",
+      "type": "string"
+     },
+     "description": {
+      "default": "",
+      "title": "Description",
+      "type": "string"
+     },
+     "lane": {
+      "default": "",
+      "title": "Lane",
+      "type": "string"
+     },
+     "form": {
+      "default": [],
+      "items": {
+       "$ref": "#/components/schemas/FormField"
+      },
+      "title": "Form",
+      "type": "array"
+     },
+     "context": {
+      "additionalProperties": true,
+      "default": {},
+      "title": "Context",
+      "type": "object"
+     },
+     "resume_url": {
+      "title": "Resume Url",
+      "type": "string"
+     },
+     "item": {
+      "additionalProperties": true,
+      "default": {},
+      "title": "Item",
+      "type": "object"
+     }
+    },
+    "required": [
+     "title",
+     "resume_url"
+    ],
+    "title": "UserTaskIn",
+    "type": "object"
+   },
+   "SubscriptionOut": {
+    "properties": {
+     "id": {
+      "title": "Id",
+      "type": "integer"
+     },
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "correlation_key": {
+      "title": "Correlation Key",
+      "type": "string"
+     },
+     "activity": {
+      "title": "Activity",
+      "type": "string"
+     },
+     "case_id": {
+      "title": "Case Id",
+      "type": "string"
+     },
+     "process": {
+      "title": "Process",
+      "type": "string"
+     },
+     "status": {
+      "title": "Status",
+      "type": "string"
+     },
+     "payload": {
+      "anyOf": [
+       {
+        "additionalProperties": true,
+        "type": "object"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Payload"
+     },
+     "expires": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expires"
+     },
+     "created": {
+      "format": "date-time",
+      "title": "Created",
+      "type": "string"
+     },
+     "completed": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Completed"
+     }
+    },
+    "required": [
+     "id",
+     "name",
+     "correlation_key",
+     "activity",
+     "case_id",
+     "process",
+     "status",
+     "payload",
+     "expires",
+     "created",
+     "completed"
+    ],
+    "title": "SubscriptionOut",
+    "type": "object"
+   },
+   "SubscriptionIn": {
+    "properties": {
+     "name": {
+      "title": "Name",
+      "type": "string"
+     },
+     "correlation_key": {
+      "title": "Correlation Key",
+      "type": "string"
+     },
+     "resume_url": {
+      "title": "Resume Url",
+      "type": "string"
+     },
+     "expires": {
+      "anyOf": [
+       {
+        "format": "date-time",
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Expires"
+     },
+     "item": {
+      "additionalProperties": true,
+      "default": {},
+      "title": "Item",
+      "type": "object"
+     }
+    },
+    "required": [
+     "name",
+     "correlation_key",
+     "resume_url"
+    ],
+    "title": "SubscriptionIn",
+    "type": "object"
+   },
+   "MessageIn": {
+    "properties": {
+     "correlation_key": {
+      "title": "Correlation Key",
+      "type": "string"
+     },
+     "payload": {
+      "additionalProperties": true,
+      "default": {},
+      "title": "Payload",
+      "type": "object"
+     },
+     "process": {
+      "anyOf": [
+       {
+        "type": "string"
+       },
+       {
+        "type": "null"
+       }
+      ],
+      "title": "Process"
+     }
+    },
+    "required": [
+     "correlation_key"
+    ],
+    "title": "MessageIn",
+    "type": "object"
+   }
+  }
+ },
+ "servers": []
+}

@@ -1,0 +1,18 @@
+[
+  {"text": "Trojan beaconing to a command-and-control server detected on laptop host-17.", "labels": ["isolate_host"]},
+  {"text": "Cryptominer process found running on build server ci-3, CPU at 100% for two days.", "labels": ["isolate_host"]},
+  {"text": "EDR blocked a malicious macro but the payload already executed on host-88.", "labels": ["isolate_host"]},
+  {"text": "Workstation host-5 is scanning the internal network and spreading a worm.", "labels": ["isolate_host"]},
+  {"text": "User jbianchi entered her password on a fake Microsoft login page from a phishing email.", "labels": ["reset_credentials"]},
+  {"text": "Impossible travel: account lverdi logged in from Milan and from Singapore within 10 minutes.", "labels": ["reset_credentials"]},
+  {"text": "The API key of the deploy bot was pushed to a public GitHub repository.", "labels": ["reset_credentials"]},
+  {"text": "Password spraying succeeded on the account of the receptionist, mailbox rules were created.", "labels": ["reset_credentials"]},
+  {"text": "A CSV with 12,000 customer names, emails and home addresses was uploaded to an unknown server.", "labels": ["notify_dpo"]},
+  {"text": "An employee emailed the payroll spreadsheet with salaries and tax codes to the wrong external address.", "labels": ["notify_dpo"]},
+  {"text": "The S3 bucket with patients' medical reports was publicly readable for a week.", "labels": ["notify_dpo"]},
+  {"text": "Attacker used the stolen password of mrossi to log into host-42 and install a backdoor.", "labels": ["isolate_host", "reset_credentials"]},
+  {"text": "Infostealer malware on host-9 exfiltrated the saved browser passwords of user gneri.", "labels": ["isolate_host", "reset_credentials"]},
+  {"text": "Compromised server db-2 sent the customer table with names and phone numbers to the attacker.", "labels": ["isolate_host", "notify_dpo"]},
+  {"text": "Weekly vulnerability scan completed: no new findings.", "labels": []},
+  {"text": "Firewall rule change approved and applied by the network team as planned.", "labels": []}
+]

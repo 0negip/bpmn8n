@@ -1,0 +1,18 @@
+{% extends "bpmn8n/base.html" %}
+{% block title %}Sign in{% endblock %}
+{% block body %}
+<main class="login">
+  <div class="panel">
+    <span class="brand">{% include "bpmn8n/mark.svg" %}bpmn8n</span>
+    <h1 class="login-title">Sign in to work your tasks</h1>
+    {% if form.errors %}<p class="notice error" role="alert">Wrong username or password.</p>{% endif %}
+    <form class="fields" method="post">
+      {% csrf_token %}
+      <label class="field"><span>Username</span><input class="input" type="text" name="username" autocomplete="username" required autofocus></label>
+      <label class="field"><span>Password</span><input class="input" type="password" name="password" autocomplete="current-password" required></label>
+      <input type="hidden" name="next" value="{{ next|default:'/inbox/' }}">
+      <div class="form-actions"><button class="btn primary" type="submit">Sign in</button></div>
+    </form>
+  </div>
+</main>
+{% endblock %}

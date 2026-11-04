@@ -1,0 +1,156 @@
+{% extends "bpmn8n/base.html" %}
+{% load bpmn8n %}
+{% block title %}{{ project.name }}{% endblock %}
+{% block crumbs %}<a href="{% url 'studio' %}">Studio</a><span aria-hidden="true">/</span><span>{{ project.name }}</span>{% endblock %}
+{% block main %}
+<div class="title-row">
+  <div>
+    <div class="title-line"><h1>{{ project.name }}</h1><span class="pill s-{{ project.status }}" id="status">{{ project.status }}</span></div>
+    <p class="sub"><span class="mono">projects/{{ project.slug }}</span>{% if project.spec %} · {{ project.spec.activities|length }} new activit{{ project.spec.activities|length|pluralize:"y,ies" }}, {{ project.spec.workflow.steps|length }} steps{% endif %}{% if project.status == "research" %} · researching the domain on the web{% elif not project.brief %} · the interview is still going{% endif %}</p>
+  </div>
+  <div class="actions">
+    {% if project.n8n_url %}<a class="btn" href="{{ project.n8n_url }}">Open in n8n</a>{% endif %}
+    {% if project.brief %}
+    <form method="post" action="{% url 'build' project.slug %}">{% csrf_token %}
+      <button class="btn primary" type="submit" {% if project.busy %}disabled{% endif %}>{% if project.building %}Building…{% elif project.status == "ready" or project.status == "failed" %}Build again{% else %}Build it{% endif %}</button>
+    </form>
+    {% endif %}
+  </div>
+</div>
+
+<div class="with-rail">
+  <div class="stack">
+    <section aria-labelledby="build">
+      <div class="section-head"><h2 id="build">Steps</h2><span class="meta">{% if project.spec or project.building %}the build: design, write each activity, test it on its examples, check the workflow, publish, import into n8n, load{% else %}the research on the domain: plan, search and read, look for what is missing, write the notes{% endif %}</span></div>
+      <div class="kanban" id="board" aria-live="polite">
+        {% for column, title in columns %}
+        <section><h3><span>{{ title }}</span><span class="num" data-count="{{ column }}"></span></h3>
+          <ol data-column="{{ column }}">
+            {% for c in cards %}{% if c.column == column %}
+            <li class="s-{{ c.status }}"><span class="card-title"><span>{{ c.title }}</span>{% if c.status != column %}<span class="pill s-{{ c.status }}">{{ c.status }}</span>{% endif %}</span>{% if c.detail %}<span class="detail">{{ c.detail|urlize }}</span>{% endif %}</li>
+            {% endif %}{% endfor %}
+          </ol>
+        </section>
+        {% endfor %}
+      </div>
+      {% if not cards %}<p class="meta below">{% if project.brief %}Ready to build: the steps appear here as the build runs.{% else %}The build starts when the interview has written the brief.{% endif %}</p>{% endif %}
+    </section>
+
+    {% if project.research_topics %}
+    <section aria-labelledby="research">
+      <div class="section-head"><h2 id="research">Domain research</h2><span class="meta">from the web, for the interview and the design: the person's answers win</span></div>
+      {% for t in project.research_topics %}
+      <details class="research"{% if forloop.last %} open{% endif %}><summary>{{ t.topic|truncatechars:140 }}</summary>
+        <div class="text">{{ t.notes|prose }}</div>
+        <ol class="sources">{% for s in t.sources %}<li><a href="{{ s.url }}" rel="noopener noreferrer" target="_blank">{{ s.title }}</a></li>{% endfor %}</ol>
+      </details>
+      {% endfor %}
+    </section>
+    {% endif %}
+
+    {% with a=project.spec.assessment %}{% if a %}
+    <section aria-labelledby="assessment">
+      <div class="section-head"><h2 id="assessment">Who decides</h2><span class="meta">software, rule, model, LLM or person: the design's reasons</span></div>
+      <dl class="kv">
+        <dt>LLM agent</dt><dd>{{ a.llm }}</dd>
+        <dt>GDPR</dt><dd>{{ a.gdpr }}</dd>
+      </dl>
+      {% if a.choices %}
+      <div class="table-wrap"><table>
+        <thead><tr><th scope="col">Step</th><th scope="col">By</th><th scope="col">Why</th></tr></thead>
+        <tbody>{% for c in a.choices %}<tr><td>{{ c.step }}</td><td><span class="pill">{{ c.by }}</span></td><td>{{ c.why }}</td></tr>{% endfor %}</tbody>
+      </table></div>
+      {% endif %}
+    </section>
+    {% endif %}{% endwith %}
+
+    <section aria-labelledby="canvas">
+      <div class="section-head"><h2 id="canvas">Workflow</h2>{% if workflow %}<span class="meta">read-only, as n8n draws it</span>{% endif %}</div>
+      {% if workflow %}
+      <div class="canvas-well"><iframe id="preview" title="The workflow of {{ project.name }} in n8n" data-src="{{ preview_url }}/workflows/demo"></iframe></div>
+      {{ workflow|json_script:"workflow" }}
+      {% else %}
+      <p class="empty">The workflow appears here after the first build.</p>
+      {% endif %}
+    </section>
+  </div>
+
+  <section class="panel" aria-labelledby="interview">
+    <header><h2 id="interview">Interview</h2><span class="meta num">{{ answers }} answer{{ answers|pluralize }}</span></header>
+    <div class="chat">
+      {% for m in project.messages %}
+      <div class="msg {{ m.role }}"><b>{% if m.role == "user" %}You{% elif forloop.last and project.brief %}Brief{% else %}Studio{% endif %}</b><div class="text">{{ m.content|prose }}</div></div>
+      {% empty %}<p class="empty">No message yet.</p>{% endfor %}
+    </div>
+    {% if project.status == "research" %}<p class="meta">Researching the domain on the web: the next question comes when it is done.</p>
+    {% elif not project.busy %}
+    <form class="fields" method="post">
+      {% csrf_token %}
+      <label class="field"><span>{% if project.brief %}Anything to add or change?{% else %}Your answer{% endif %}</span>
+        <textarea class="input" name="answer" rows="3" required></textarea></label>
+      <div class="form-actions"><button class="btn" type="submit" data-waiting="The LLM is thinking…">Send</button></div>
+    </form>
+    {% endif %}
+  </section>
+</div>
+
+<script>
+  // the workflow in n8n's preview: it says n8nReady and is sent the workflow, in the page's light or dark
+  const frame = document.getElementById('preview');
+  if (frame) {
+    const dark = matchMedia('(prefers-color-scheme: dark)').matches;
+    frame.src = `${frame.dataset.src}?theme=${dark ? 'dark' : 'light'}`;
+    const workflow = JSON.parse(document.getElementById('workflow').textContent);
+    addEventListener('message', e => {
+      if (e.source !== frame.contentWindow) return;
+      let m; try { m = typeof e.data === 'string' ? JSON.parse(e.data) : e.data; } catch (_) { return; }
+      if (m && m.command === 'n8nReady') frame.contentWindow.postMessage(JSON.stringify({ command: 'openWorkflow', workflow }), '*');
+    });
+  }
+  const chat = document.querySelector('.chat');  // the interview opens on its latest message
+  if (chat) chat.scrollTop = chat.scrollHeight;
+  // the count per column, and the build's cards as server-sent events while it runs
+  const lists = Object.fromEntries([...document.querySelectorAll('#board ol')].map(ol => [ol.dataset.column, ol]));
+  const counts = () => document.querySelectorAll('[data-count]').forEach(el => {
+    const n = lists[el.dataset.count].children.length;
+    el.textContent = n || '';
+    lists[el.dataset.count].dataset.empty = !n;
+  });
+  counts();
+  {% if project.busy %}
+  const linked = text => {  // the card's detail with its URLs as links, without innerHTML
+    const out = document.createElement('span');
+    out.className = 'detail';
+    text.split(/(https?:\/\/\S+)/).forEach((part, i) => {
+      if (i % 2) { const a = out.appendChild(document.createElement('a')); a.href = a.textContent = part; }
+      else out.append(part);
+    });
+    return out;
+  };
+  const events = new EventSource("{% url 'events' project.slug %}");
+  events.onmessage = message => {
+    const state = JSON.parse(message.data);
+    Object.values(lists).forEach(ol => ol.replaceChildren());
+    for (const card of state.cards) {
+      const li = document.createElement('li'), title = document.createElement('span'), name = document.createElement('span');
+      li.className = `s-${card.status}`;
+      title.className = 'card-title';
+      name.textContent = card.title;
+      title.append(name);
+      if (card.status !== card.column) {
+        const pill = document.createElement('span');
+        pill.className = `pill s-${card.status}`;
+        pill.textContent = card.status;
+        title.append(pill);
+      }
+      li.append(title);
+      if (card.detail) li.append(linked(card.detail));
+      lists[card.column].append(li);
+    }
+    counts();
+    document.getElementById('status').textContent = state.status;
+    if (!['building', 'research'].includes(state.status)) { events.close(); location.reload(); }
+  };
+  {% endif %}
+</script>
+{% endblock %}

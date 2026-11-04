@@ -1,0 +1,242 @@
+{
+  "name": "ACME \u00b7 Expense approval",
+  "nodes": [
+    {
+      "id": "8dc1b9c9-83a6-4d88-be8a-53c2a2c3fa57",
+      "name": "Expense Submitted",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "acme-expense",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "webhookId": "f0e12df5-6e98-481f-a065-ad5c255c19f4"
+    },
+    {
+      "id": "491d9bb6-08aa-49f1-b017-c19b33183cb0",
+      "name": "Check Expense Policy",
+      "type": "CUSTOM.bpmn8nBusinessRuleTask",
+      "typeVersion": 1,
+      "position": [
+        280,
+        0
+      ],
+      "parameters": {
+        "task": "/api/tasks/check_expense_policy",
+        "output": "result",
+        "input": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        }
+      }
+    },
+    {
+      "id": "c44636fb-fadc-43e0-b1c7-b4c89de12161",
+      "name": "Assess Justification",
+      "type": "CUSTOM.bpmn8nExclusiveGateway",
+      "typeVersion": 1,
+      "position": [
+        560,
+        0
+      ],
+      "parameters": {
+        "decider": "laya",
+        "question": "What is the purpose of this expense?",
+        "state": "{{justification}}",
+        "minConfidence": 0.7,
+        "branches": {
+          "values": [
+            {
+              "name": "business",
+              "description": "a clear business purpose: client or customer meeting, conference, business trip, work event"
+            },
+            {
+              "name": "personal",
+              "description": "a personal purpose: family, friends, holiday, private gifts or shopping"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ff66561f-69aa-4af2-9515-ea49c888a8db",
+      "name": "Approve Expense",
+      "type": "CUSTOM.bpmn8nUserTask",
+      "typeVersion": 1,
+      "position": [
+        840,
+        0
+      ],
+      "parameters": {
+        "title": "Approve {{amount}} EUR for {{employee}}",
+        "lane": "managers",
+        "description": "",
+        "context": "",
+        "form": {
+          "fields": [
+            {
+              "name": "approved",
+              "label": "Approve",
+              "type": "boolean"
+            },
+            {
+              "name": "note",
+              "label": "Note",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "webhookId": "f33a453d-7eb1-4c12-8874-bb7aee618c48"
+    },
+    {
+      "id": "409af358-ec40-4314-9f34-22aed5132944",
+      "name": "Notify Rejection",
+      "type": "CUSTOM.bpmn8nSendTask",
+      "typeVersion": 1,
+      "position": [
+        840,
+        200
+      ],
+      "parameters": {
+        "task": "/api/tasks/send_notification",
+        "output": "result",
+        "input": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "to": "{{employee}}",
+            "subject": "Expense rejected: personal purpose"
+          },
+          "matchingColumns": [],
+          "schema": []
+        }
+      }
+    },
+    {
+      "id": "01654891-3825-4da5-808f-cb4e6164cf9c",
+      "name": "Record Expense",
+      "type": "CUSTOM.bpmn8nServiceTask",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        0
+      ],
+      "parameters": {
+        "task": "/api/tasks/record_expense",
+        "output": "result",
+        "input": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        }
+      }
+    },
+    {
+      "id": "5c9fc1a8-96e6-4ab5-9e62-3230a3746039",
+      "name": "Notify Employee",
+      "type": "CUSTOM.bpmn8nSendTask",
+      "typeVersion": 1,
+      "position": [
+        1400,
+        0
+      ],
+      "parameters": {
+        "task": "/api/tasks/send_notification",
+        "output": "result",
+        "input": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "to": "{{employee}}",
+            "subject": "Expense {{status}}",
+            "body": "{{note}}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Expense Submitted": {
+      "main": [
+        [
+          {
+            "node": "Check Expense Policy",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Expense Policy": {
+      "main": [
+        [
+          {
+            "node": "Assess Justification",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Assess Justification": {
+      "main": [
+        [
+          {
+            "node": "Approve Expense",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Notify Rejection",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Approve Expense",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Approve Expense": {
+      "main": [
+        [
+          {
+            "node": "Record Expense",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Record Expense": {
+      "main": [
+        [
+          {
+            "node": "Notify Employee",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

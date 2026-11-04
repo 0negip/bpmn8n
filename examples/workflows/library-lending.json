@@ -1,0 +1,463 @@
+{
+  "name": "ACME \u00b7 Library lending",
+  "nodes": [
+    {
+      "id": "bf24e984-1dc5-4f66-879c-1f440326af34",
+      "name": "Request Received",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        0,
+        0
+      ],
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "acme-library",
+        "responseMode": "onReceived",
+        "options": {}
+      },
+      "webhookId": "08247ba0-e7a4-4434-8f87-41430dff7096"
+    },
+    {
+      "id": "df0749f7-d4da-4971-a0b0-c49cbf777961",
+      "name": "Get Book Status",
+      "type": "CUSTOM.bpmn8nServiceTask",
+      "typeVersion": 1,
+      "position": [
+        280,
+        0
+      ],
+      "parameters": {
+        "task": "/api/tasks/get_book_status",
+        "output": "result",
+        "input": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        }
+      }
+    },
+    {
+      "id": "7491e8c2-0a03-4002-a87e-ee1c08d210af",
+      "name": "Is Book Available?",
+      "type": "CUSTOM.bpmn8nExclusiveGateway",
+      "typeVersion": 1,
+      "position": [
+        560,
+        0
+      ],
+      "parameters": {
+        "decider": "conditions",
+        "branches": {
+          "values": [
+            {
+              "name": "available",
+              "condition": "{{available}}"
+            },
+            {
+              "name": "on loan",
+              "condition": "not {{available}}"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "be579f6d-d368-4354-8ee1-3e9d489ec3cb",
+      "name": "Fetch Book",
+      "type": "CUSTOM.bpmn8nManualTask",
+      "typeVersion": 1,
+      "position": [
+        840,
+        -200
+      ],
+      "parameters": {
+        "title": "Fetch {{book}} from the shelf",
+        "lane": "librarians",
+        "description": "",
+        "context": "",
+        "form": {
+          "fields": []
+        }
+      },
+      "webhookId": "211bc7ae-87fb-435d-ba48-06b042143f06"
+    },
+    {
+      "id": "e1412f80-d77a-4609-b103-2b6006e17f66",
+      "name": "Check Out Book",
+      "type": "CUSTOM.bpmn8nUserTask",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        -200
+      ],
+      "parameters": {
+        "title": "Check out {{book}} for {{reader}}",
+        "lane": "librarians",
+        "description": "",
+        "context": "",
+        "form": {
+          "fields": [
+            {
+              "name": "due_date",
+              "label": "Due date",
+              "type": "string"
+            }
+          ]
+        }
+      },
+      "webhookId": "a11d69af-ce4c-4b8d-a35c-c4b203419510"
+    },
+    {
+      "id": "e1433ff6-5c0e-4f47-bb64-9c1ba4650c2e",
+      "name": "Lend Book",
+      "type": "CUSTOM.bpmn8nParallelGateway",
+      "typeVersion": 1,
+      "position": [
+        1400,
+        -200
+      ],
+      "parameters": {
+        "branches": {
+          "values": [
+            {
+              "name": "reply"
+            },
+            {
+              "name": "catalogue"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "id": "ec0b2c19-8497-47dd-8396-558a5e4aeef6",
+      "name": "Send Checkout Reply",
+      "type": "CUSTOM.bpmn8nSendTask",
+      "typeVersion": 1,
+      "position": [
+        1680,
+        -300.0
+      ],
+      "parameters": {
+        "task": "/api/tasks/send_notification",
+        "output": "result",
+        "input": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "to": "{{reader}}",
+            "subject": "{{book}} is ready for you, due {{due_date}}"
+          },
+          "matchingColumns": [],
+          "schema": []
+        }
+      }
+    },
+    {
+      "id": "ab951306-397c-46f3-85e4-17babde44507",
+      "name": "Update Catalogue",
+      "type": "CUSTOM.bpmn8nServiceTask",
+      "typeVersion": 1,
+      "position": [
+        1680,
+        -100.0
+      ],
+      "parameters": {
+        "task": "/api/tasks/update_catalogue",
+        "output": "result",
+        "input": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        }
+      }
+    },
+    {
+      "id": "654849d1-f47b-4748-b900-b4bef6d11d44",
+      "name": "Send On-Loan Reply",
+      "type": "CUSTOM.bpmn8nSendTask",
+      "typeVersion": 1,
+      "position": [
+        840,
+        200
+      ],
+      "parameters": {
+        "task": "/api/tasks/send_notification",
+        "output": "result",
+        "input": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "to": "{{reader}}",
+            "subject": "{{book}} is on loan: reply hold-book to wait for it, or decline-hold"
+          },
+          "matchingColumns": [],
+          "schema": []
+        }
+      }
+    },
+    {
+      "id": "70e9b1ca-02f5-4bc6-919b-79b4e287f4d6",
+      "name": "Wait for Reader",
+      "type": "CUSTOM.bpmn8nEventBasedGateway",
+      "typeVersion": 1,
+      "position": [
+        1120,
+        200
+      ],
+      "parameters": {
+        "branches": {
+          "values": [
+            {
+              "name": "hold-book"
+            },
+            {
+              "name": "decline-hold"
+            }
+          ]
+        },
+        "correlationKey": "{{request_id}}",
+        "mode": "for",
+        "amount": 1,
+        "unit": "weeks"
+      },
+      "webhookId": "c6cdebac-552e-4969-a5b1-872eb9e80380"
+    },
+    {
+      "id": "74cff3c3-ff3a-4a4e-86a5-fe4b5da968a7",
+      "name": "Hold Book",
+      "type": "CUSTOM.bpmn8nServiceTask",
+      "typeVersion": 1,
+      "position": [
+        1400,
+        200
+      ],
+      "parameters": {
+        "task": "/api/tasks/hold_book",
+        "output": "result",
+        "input": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": []
+        }
+      }
+    },
+    {
+      "id": "17626586-c8b3-4d92-9083-9e04322d7bb7",
+      "name": "Send Hold Reply",
+      "type": "CUSTOM.bpmn8nSendTask",
+      "typeVersion": 1,
+      "position": [
+        1680,
+        200
+      ],
+      "parameters": {
+        "task": "/api/tasks/send_notification",
+        "output": "result",
+        "input": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "to": "{{reader}}",
+            "subject": "Your hold on {{book}} is confirmed"
+          },
+          "matchingColumns": [],
+          "schema": []
+        }
+      }
+    },
+    {
+      "id": "830fbf30-618e-4f86-a18b-0c4d38183082",
+      "name": "Wait Two Weeks",
+      "type": "CUSTOM.bpmn8nTimerEvent",
+      "typeVersion": 1,
+      "position": [
+        1960,
+        200
+      ],
+      "parameters": {
+        "mode": "for",
+        "amount": 2,
+        "unit": "weeks"
+      }
+    },
+    {
+      "id": "dbfd6a8c-8363-42b7-852e-9f7d3cd1e039",
+      "name": "Cancel Request",
+      "type": "CUSTOM.bpmn8nSendTask",
+      "typeVersion": 1,
+      "position": [
+        1680,
+        400
+      ],
+      "parameters": {
+        "task": "/api/tasks/send_notification",
+        "output": "result",
+        "input": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "to": "{{reader}}",
+            "subject": "Your request for {{book}} is cancelled"
+          },
+          "matchingColumns": [],
+          "schema": []
+        }
+      }
+    }
+  ],
+  "connections": {
+    "Request Received": {
+      "main": [
+        [
+          {
+            "node": "Get Book Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Book Status": {
+      "main": [
+        [
+          {
+            "node": "Is Book Available?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Is Book Available?": {
+      "main": [
+        [
+          {
+            "node": "Fetch Book",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Send On-Loan Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Fetch Book": {
+      "main": [
+        [
+          {
+            "node": "Check Out Book",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Check Out Book": {
+      "main": [
+        [
+          {
+            "node": "Lend Book",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Lend Book": {
+      "main": [
+        [
+          {
+            "node": "Send Checkout Reply",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Update Catalogue",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send On-Loan Reply": {
+      "main": [
+        [
+          {
+            "node": "Wait for Reader",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait for Reader": {
+      "main": [
+        [
+          {
+            "node": "Cancel Request",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Hold Book",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Cancel Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Hold Book": {
+      "main": [
+        [
+          {
+            "node": "Send Hold Reply",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Send Hold Reply": {
+      "main": [
+        [
+          {
+            "node": "Wait Two Weeks",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait Two Weeks": {
+      "main": [
+        [
+          {
+            "node": "Get Book Status",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "settings": {
+    "executionOrder": "v1"
+  }
+}

@@ -1,0 +1,20 @@
+{% extends "bpmn8n/base.html" %}
+{% block title %}Docs{% endblock %}
+{% block crumbs %}<span>Docs</span>{% endblock %}
+{% block main %}
+<div class="title-row">
+  <div>
+    <h1>Docs</h1>
+    <p class="sub">How bpmn8n works and how to build with it. The activities this server runs, with their decorators, are in <a href="{% url 'activities' %}" class="inline-link">Activities</a>.</p>
+  </div>
+</div>
+<div class="docs">
+  <nav class="toc" aria-labelledby="toc">
+    <h2 id="toc">On this page</h2>
+    <ul class="toc-list">
+      {% for h in toc %}<li><a href="#{{ h.id }}">{{ h.name }}</a>{% if h.children %}<ul class="toc-list">{% for c in h.children %}<li><a href="#{{ c.id }}">{{ c.name }}</a></li>{% endfor %}</ul>{% endif %}</li>{% endfor %}
+    </ul>
+  </nav>
+  <article class="prose">{{ guide }}</article>
+</div>
+{% endblock %}
