@@ -2,7 +2,7 @@ from datetime import datetime, timezone
 from unittest.mock import patch
 
 from django.contrib.auth.models import Group
-from django.test import TestCase
+from django.test import TestCase, override_settings
 
 from bpmn8n.workflows.check import WorkflowCheck
 from .models import DemoBooking, DemoSlot
@@ -11,6 +11,7 @@ from .tasks import (AppointmentRequest, Eligibility, PatientMessage, Reservation
                     find_hospital_slots, reserve_hospital_slot, validate_hospital_request)
 
 
+@override_settings(TIME_ZONE="UTC")
 class HospitalTest(TestCase):
     def setUp(self):
         self.slot = DemoSlot.objects.create(service="Cardiology", doctor="Dr Example", location="Clinic A",
@@ -90,3 +91,4 @@ class HospitalTest(TestCase):
         self.assertEqual(connections["Booked?"]["main"][1][0]["node"], "C · Find slots")
         self.assertEqual(connections["Valid?"]["main"][1][0]["node"], "0 · Staff referral")
         self.assertEqual(connections["Selected?"]["main"][0][0]["node"], "C · Reserve slot")
+
