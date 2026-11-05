@@ -64,15 +64,19 @@ class SlotOptions(Schema):
     slots_available: bool
 
 
+def available_slots(data):
+    """The same availability constraints for search and the final reservation check."""
+    if not data.earliest or not data.latest or data.earliest > data.latest:
+        return DemoSlot.objects.none()
+    slots = DemoSlot.objects.filter(service=data.service, demobooking__isnull=True,
+                                   starts_at__date__range=(data.earliest, data.latest))
+    return slots.filter(starts_at__hour__lt=12) if data.morning else slots
+
+
 @task("serviceTask")
 def find_hospital_slots(request, data: AppointmentRequest) -> SlotOptions:
     """Booker C reads current synthetic availability for the reviewed request."""
-    if not data.earliest or not data.latest or data.earliest > data.latest:
-        return SlotOptions(slots=[], slots_available=False)
-    slots = DemoSlot.objects.filter(service=data.service, demobooking__isnull=True,
-                                   starts_at__date__range=(data.earliest, data.latest))
-    if data.morning:
-        slots = slots.filter(starts_at__hour__lt=12)
+    slots = available_slots(data)
     options = [{"slot_id": slot.pk, "doctor": slot.doctor, "starts_at": slot.starts_at.isoformat(),
                 "location": slot.location} for slot in slots.order_by("starts_at", "pk")[:10]]
     return SlotOptions(slots=options, slots_available=bool(options))
@@ -102,8 +106,7 @@ def reserve_hospital_slot(request, data: Reservation) -> BookingResult:
             return BookingResult(booked=False)
         booking = existing
     else:
-        options = find_hospital_slots(request, data)
-        if data.slot_id not in [slot["slot_id"] for slot in options.slots]:
+        if not available_slots(data).filter(pk=data.slot_id).exists():
             return BookingResult(booked=False)
         try:
             with transaction.atomic():

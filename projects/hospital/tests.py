@@ -53,6 +53,22 @@ class HospitalTest(TestCase):
         self.assertEqual(DemoBooking.objects.count(), 1)
         self.assertFalse(find_hospital_slots(None, AppointmentRequest(**self.preferences)).slots_available)
 
+    def test_reservation_checks_selected_slot_beyond_search_page(self):
+        for index in range(10):
+            DemoSlot.objects.create(service="Cardiology", doctor=f"Doctor {index}", location="Clinic B",
+                                    starts_at=datetime(2026, 11, 9, 9, tzinfo=timezone.utc))
+        options = find_hospital_slots(None, AppointmentRequest(**self.preferences))
+        self.assertNotIn(self.slot.pk, [slot["slot_id"] for slot in options.slots])
+        self.assertTrue(reserve_hospital_slot(None, self.reservation()).booked)
+
+    def test_reservation_rechecks_date_and_time_preferences(self):
+        self.assertFalse(reserve_hospital_slot(None, self.reservation(latest="2026-11-09")).booked)
+        self.assertFalse(reserve_hospital_slot(None, self.reservation(earliest=None)).booked)
+        self.slot.starts_at = datetime(2026, 11, 10, 14, tzinfo=timezone.utc)
+        self.slot.save()
+        self.assertFalse(reserve_hospital_slot(None, self.reservation()).booked)
+        self.assertTrue(reserve_hospital_slot(None, self.reservation(morning=False)).booked)
+
     def test_lost_slot_between_search_and_write_returns_retry(self):
         original = DemoBooking.objects.create
 
