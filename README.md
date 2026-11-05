@@ -56,6 +56,20 @@ Then open:
 
 **Needs:** Docker, Node.js and, on a Mac, [uv](https://docs.astral.sh/uv/). Add an LLM provider key in *Admin → Settings*, or point it to a local model.
 
+## Python environment
+
+Install Python 3.12 (minimum 3.11), then create the local environment from the repository root:
+
+```bash
+python tools/setup_env.py
+# Include testing and browser dependencies:
+python tools/setup_env.py --dev
+```
+
+On Windows with the Python launcher, use `py -3.12 tools/setup_env.py`. The script creates `.venv`, installs `requirements.txt` (or `requirements-dev.txt` with `--dev`) and can be rerun to update dependencies. It also works when invoked from another directory. Activate it with `.venv\Scripts\Activate.ps1` on PowerShell or `source .venv/bin/activate` on macOS/Linux. Then run `python manage.py migrate` and `python manage.py runserver`.
+
+This sets up the Python application. Docker/Node.js, n8n, model servers and SearXNG have their own setup described above and in the guide. Browser tests also require `python -m playwright install chromium` after the development dependencies.
+
 ## One task, one function
 
 ```python
