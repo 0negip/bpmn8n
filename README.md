@@ -67,6 +67,18 @@ def check_expense_policy(request, data: Expense) -> PolicyCheck:
 
 It appears in the node's menu at once, with a typed form, validation and an OpenAPI entry.
 
+## Hospital appointment use case
+
+[UC-01 · Intelligent hospital appointment booking](projects/hospital/README.md) adds a patient request, review of service and dates, administrative validation, slot selection and reservation. It includes an importable [n8n workflow](projects/hospital/workflow.json), synthetic demo slots, typed task endpoints and recovery paths for changed availability or staff referral.
+
+Four responsibilities follow the university project's agent taxonomy: Coordinator, Chat Agent, Classifier and Booker. The example runs against a local demonstration database. Follow its setup guide to connect Ollama, create the people-inbox groups and try the workflow.
+
+```bash
+python manage.py migrate
+python manage.py loaddata hospital_demo
+python manage.py test projects.hospital
+```
+
 ## Learn more
 
 The complete guide lives in [`docs/GUIDE.md`](docs/GUIDE.md): the nodes, the workflow check, Studio, people and states, extraction, OCR, process mining, BPMN coverage, tests and known limits.

@@ -1,0 +1,9 @@
+{
+  "validate_hospital_request": [
+    {"input": {}, "output": {"valid": false, "reason": "Missing service or dates"}},
+    {"input": {"service": "Cardiology", "earliest": "2026-11-10", "latest": "2026-11-09"}, "output": {"valid": false, "reason": "Invalid date interval"}},
+    {"input": {"service": "Cardiology", "earliest": "2026-11-09", "latest": "2026-11-13", "registered": true, "referral_required": true}, "output": {"valid": false, "reason": "Staff must check registration or referral"}}
+  ],
+  "find_hospital_slots": [{"input": {}, "output": {"slots": [], "slots_available": false}}],
+  "reserve_hospital_slot": [{"input": {"request_id": "example", "patient_id": "DEMO", "slot_id": 1}, "output": {"booked": false}}]
+}

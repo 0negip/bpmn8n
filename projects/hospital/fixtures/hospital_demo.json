@@ -1,0 +1,4 @@
+[
+  {"model": "hospital.demoslot", "pk": 1, "fields": {"service": "Cardiology", "doctor": "Dr Example", "starts_at": "2026-11-10T09:00:00Z", "location": "Demo clinic A"}},
+  {"model": "hospital.demoslot", "pk": 2, "fields": {"service": "Cardiology", "doctor": "Dr Sample", "starts_at": "2026-11-11T14:00:00Z", "location": "Demo clinic B"}}
+]
